@@ -127,15 +127,22 @@ export default function Chats({ msg, caip10, messageBeingSent, ApproveIntent, is
           {msg.fromCAIP10?.toLowerCase() === caip10?.toLowerCase() ? (
             <SentMessageWrapper align="row-reverse">
               <SenderMessage>
-                {msg.messageContent
-                  .split('\n')
-                  .map((str) =>
-                    str.includes('<html>') ? (
-                      <div dangerouslySetInnerHTML={{ __html: str }} />
-                    ) : (
-                      <TextMessage key={Math.random().toString()}>{str}</TextMessage>
-                    )
-                  )}
+                {msg.messageContent.split('\n').map((str) =>
+                  str.includes('<html>') ? (
+                    <div
+                      dangerouslySetInnerHTML={{
+                        __html: str
+                          .replaceAll(/[\r\n]/gm, '')
+                          .replaceAll('/\t/gm', '')
+                          .replaceAll('  ', ' '),
+                      }}
+                    />
+                  ) : (
+                    <TextMessage key={Math.random().toString()}>{str}</TextMessage>
+                  )
+                )}
+                {msg.messageContent.split('\n').map((str) => str.replace(/[\r\n]/gm, '').replaceAll('  ', ' '))}
+
                 <TimeStamp>{date}</TimeStamp>
               </SenderMessage>
             </SentMessageWrapper>
