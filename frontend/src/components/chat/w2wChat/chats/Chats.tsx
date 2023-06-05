@@ -127,9 +127,15 @@ export default function Chats({ msg, caip10, messageBeingSent, ApproveIntent, is
           {msg.fromCAIP10?.toLowerCase() === caip10?.toLowerCase() ? (
             <SentMessageWrapper align="row-reverse">
               <SenderMessage>
-                {msg.messageContent.split('\n').map((str) => (
-                  <TextMessage key={Math.random().toString()}>{str}</TextMessage>
-                ))}
+                {msg.messageContent
+                  .split('\n')
+                  .map((str) =>
+                    str.includes('<html>') ? (
+                      <div dangerouslySetInnerHTML={{ __html: str }} />
+                    ) : (
+                      <TextMessage key={Math.random().toString()}>{str}</TextMessage>
+                    )
+                  )}
                 <TimeStamp>{date}</TimeStamp>
               </SenderMessage>
             </SentMessageWrapper>
@@ -366,11 +372,11 @@ const TextMessage = styled.p`
   text-align: left;
   font-weight: 400;
   margin: 0px;
-  @media(${device.tablet}){
-    max-width:70vw;
+  @media (${device.tablet}) {
+    max-width: 70vw;
   }
-  @media(${device.mobileL}){
-    max-width:65vw;
+  @media (${device.mobileL}) {
+    max-width: 65vw;
   }
 `;
 
@@ -396,7 +402,7 @@ const MessageText = styled(SpanV2)`
     padding: 0px 10px 0px 0px;
     max-width: 8rem;
   }
-`
+`;
 
 const MessageWrapper = styled.div`
   width: 100%;
@@ -411,7 +417,7 @@ const ReceivedMessage = styled.div`
   box-sizing: border-box;
   position: relative;
   max-width: 525px;
-  left: ${(props:any) => props.left || '34px'};
+  left: ${(props: any) => props.left || '34px'};
   padding: ${(props: any): string => props.padding || '5px 11px 10px 15px'};
   background: ${(props: any): string => props.color || '#ffffff'};
   text-align: left;
@@ -421,24 +427,24 @@ const ReceivedMessage = styled.div`
   color: #000000;
   flex-direction: column;
   align-items: center;
-  @media(${device.tablet}){
-    max-width:80vw;
+  @media (${device.tablet}) {
+    max-width: 80vw;
   }
-  @media(${device.mobileL}){
+  @media (${device.mobileL}) {
     max-width: 75vw;
   }
 `;
 
 const IntentMessage = styled(ReceivedMessage)`
   flex-direction: row;
-  @media(${device.laptop}){
-    width:80%;
+  @media (${device.laptop}) {
+    width: 80%;
   }
-  @media(${device.laptopL}){
-    width:70%;
+  @media (${device.laptopL}) {
+    width: 70%;
   }
-  @media(${device.tablet}){
-    width:65%;
+  @media (${device.tablet}) {
+    width: 65%;
   }
 `;
 
@@ -456,10 +462,10 @@ const SenderMessage = styled.div`
   color: #ffffff;
   flex-direction: column;
   align-items: baseline;
-  @media(${device.tablet}){
-    max-width:80vw;
+  @media (${device.tablet}) {
+    max-width: 80vw;
   }
-  @media(${device.mobileL}){
+  @media (${device.mobileL}) {
     max-width: 75vw;
   }
 `;
