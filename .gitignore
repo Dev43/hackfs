@@ -11,6 +11,7 @@ coverage
 # production
 build
 dump.rdb
+.yarn
 
 # misc
 .DS_Store
