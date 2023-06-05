@@ -53,7 +53,7 @@ local.properties
 
 # Locally stored "Eclipse launch configurations"
 *.launch
-
+TODO.md
 # PyDev specific (Python IDE for Eclipse)
 *.pydevproject
 
