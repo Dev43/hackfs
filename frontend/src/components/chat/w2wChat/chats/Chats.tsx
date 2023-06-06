@@ -154,9 +154,20 @@ export default function Chats({ msg, caip10, messageBeingSent, ApproveIntent, is
               msgType={msg.messageType}
             >
               <ReceivedMessage left={isGroup ? '8px' : '34px'}>
-                {msg.messageContent.split('\n').map((str) => (
-                  <TextMessage key={Math.random().toString()}>{str}</TextMessage>
-                ))}
+                {msg.messageContent.split('\n').map((str) =>
+                  str.includes('<html>') ? (
+                    <div
+                      dangerouslySetInnerHTML={{
+                        __html: str
+                          .replaceAll(/[\r\n]/gm, '')
+                          .replaceAll('/\t/gm', '')
+                          .replaceAll('  ', ' '),
+                      }}
+                    />
+                  ) : (
+                    <TextMessage key={Math.random().toString()}>{str}</TextMessage>
+                  )
+                )}
                 <TimeStamp>{date}</TimeStamp>
               </ReceivedMessage>
             </ReceivedMessageWrapper>
