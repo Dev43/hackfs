@@ -141,7 +141,6 @@ export default function Chats({ msg, caip10, messageBeingSent, ApproveIntent, is
                     <TextMessage key={Math.random().toString()}>{str}</TextMessage>
                   )
                 )}
-                {msg.messageContent.split('\n').map((str) => str.replace(/[\r\n]/gm, '').replaceAll('  ', ' '))}
 
                 <TimeStamp>{date}</TimeStamp>
               </SenderMessage>

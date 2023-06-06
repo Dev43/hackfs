@@ -27,16 +27,10 @@ const ChatUserContextProvider = (props) => {
           provider: web3ModalProvider,
         });
         const superfluidSigner = sf.createSigner({ web3Provider: web3ModalProvider });
-        (window as any).superfuild = sf;
+        // we pollute the window for the hackathon
+        (window as any).superfluid = sf;
         (window as any).superfluidSigner = superfluidSigner;
-        // let ethx = await sf.loadSuperToken('ETHx');
-        // const createFlowOperation = ethx.createFlow({
-        //   sender: account,
-        //   receiver: '0x99B9D3918C5e3b40df944e243335A52ecc8F49F5',
-        //   flowRate: '1000000000',
-        // });
-        // const txnResponse = await createFlowOperation.exec(superfluidSigner);
-        // const txnReceipt = await txnResponse.wait();
+        (window as any).account = account;
       }
     };
     provider(account).then(console.log).catch(console.error);
