@@ -1,5 +1,5 @@
-import * as PushAPI from "@pushprotocol/restapi";
-import { ProgressHookType } from "@pushprotocol/restapi";
+import * as PushAPI from '@pushprotocol/restapi';
+import { ProgressHookType } from '@pushprotocol/restapi';
 import { useWeb3React } from '@web3-react/core';
 import { LOADER_SPINNER_TYPE } from 'components/reusables/loaders/LoaderSpinner';
 import { appConfig } from 'config';
@@ -7,28 +7,55 @@ import { ethers } from 'ethers';
 import * as w2wHelper from 'helpers/w2w';
 import React, { createContext, useState } from 'react';
 import { BlockedLoadingI, ConnectedUser, User } from 'types/chat';
+import { Framework } from '@superfluid-finance/sdk-core';
+import { Web3Provider } from '@ethersproject/providers';
 
-export const ChatUserContext = createContext({})
+export const ChatUserContext = createContext({});
 
 //this context is global and it is called in APP.tsx
 const ChatUserContextProvider = (props) => {
   const [connectedUser, setConnectedUser] = useState<ConnectedUser>();
-  const { account, chainId, library } = useWeb3React<ethers.providers.Web3Provider>();
+  const { account, chainId, library, connector, active } = useWeb3React<ethers.providers.Web3Provider>();
+
+  React.useEffect(() => {
+    const provider = async (acc) => {
+      if (acc && acc !== '') {
+        let web3ModalRawProvider = await connector.getProvider();
+        const web3ModalProvider = new Web3Provider(web3ModalRawProvider, 'any');
+        const sf = await Framework.create({
+          chainId: 5, //your chainId here
+          provider: web3ModalProvider,
+        });
+        const superfluidSigner = sf.createSigner({ web3Provider: web3ModalProvider });
+        (window as any).superfuild = sf;
+        (window as any).superfluidSigner = superfluidSigner;
+        // let ethx = await sf.loadSuperToken('ETHx');
+        // const createFlowOperation = ethx.createFlow({
+        //   sender: account,
+        //   receiver: '0x99B9D3918C5e3b40df944e243335A52ecc8F49F5',
+        //   flowRate: '1000000000',
+        // });
+        // const txnResponse = await createFlowOperation.exec(superfluidSigner);
+        // const txnReceipt = await txnResponse.wait();
+      }
+    };
+    provider(account).then(console.log).catch(console.error);
+  }, [account, connector, chainId, active]);
 
   //this blocked loading is a modal which shows during the PGP keys generation time
   const [blockedLoading, setBlockedLoading] = useState<BlockedLoadingI>({
     enabled: false,
     title: null,
   });
-  const [pgpPvtKey,setPgpPvtKey] = useState(null);
-  const [localPeer,setLocalPeer]= useState({
-    peer:'',
-    peerID:''
-  })
-  const [connectedPeerID,setConnectedPeerID] = useState({
-    peerID:''
+  const [pgpPvtKey, setPgpPvtKey] = useState(null);
+  const [localPeer, setLocalPeer] = useState({
+    peer: '',
+    peerID: '',
   });
-  const [displayQR,setDisplayQR] = useState(false);
+  const [connectedPeerID, setConnectedPeerID] = useState({
+    peerID: '',
+  });
+  const [displayQR, setDisplayQR] = useState(false);
 
   interface onboardingProgressI {
     enabled: boolean;
@@ -36,82 +63,81 @@ const ChatUserContextProvider = (props) => {
     spinnerType: number;
     progress: number;
   }
-  
+
   // To reformat errors
   const onboardingProgressReformatter = (progressHook: ProgressHookType) => {
     let onboardingProgress: onboardingProgressI = {
       enabled: true,
       hookInfo: progressHook,
       spinnerType: LOADER_SPINNER_TYPE.PROCESSING,
-      progress: 0
+      progress: 0,
     };
 
     if (progressHook) {
       switch (progressHook.progressId) {
-        case "PUSH-CREATE-01":
-          onboardingProgress.hookInfo.progressTitle = "Creating Push Profile";
+        case 'PUSH-CREATE-01':
+          onboardingProgress.hookInfo.progressTitle = 'Creating Push Profile';
           onboardingProgress.progress = 10;
           break;
-        case "PUSH-CREATE-02":
-          onboardingProgress.hookInfo.progressTitle = "1/3 - Profile Generation";
+        case 'PUSH-CREATE-02':
+          onboardingProgress.hookInfo.progressTitle = '1/3 - Profile Generation';
           onboardingProgress.progress = 25;
           break;
-        case "PUSH-CREATE-03":
-          onboardingProgress.hookInfo.progressTitle = "2/3 - Profile Encryption";
+        case 'PUSH-CREATE-03':
+          onboardingProgress.hookInfo.progressTitle = '2/3 - Profile Encryption';
           onboardingProgress.progress = 50;
           break;
-        case "PUSH-CREATE-04":
-          onboardingProgress.hookInfo.progressTitle = "3/3 - Profile Sync";
+        case 'PUSH-CREATE-04':
+          onboardingProgress.hookInfo.progressTitle = '3/3 - Profile Sync';
           onboardingProgress.progress = 75;
           break;
-        case "PUSH-CREATE-05":
-          onboardingProgress.hookInfo.progressTitle = "Push Profile Created";
+        case 'PUSH-CREATE-05':
+          onboardingProgress.hookInfo.progressTitle = 'Push Profile Created';
           onboardingProgress.progress = 99;
           break;
-        case "PUSH-DECRYPT-01":
-          onboardingProgress.hookInfo.progressTitle = "Decrypting Push Profile";
+        case 'PUSH-DECRYPT-01':
+          onboardingProgress.hookInfo.progressTitle = 'Decrypting Push Profile';
           break;
-        case "PUSH-DECRYPT-02":
+        case 'PUSH-DECRYPT-02':
           onboardingProgress.enabled = false;
-          onboardingProgress.hookInfo.progressTitle = "Push Profile Unlocked";
+          onboardingProgress.hookInfo.progressTitle = 'Push Profile Unlocked';
           break;
-        case "PUSH-UPGRADE-01":
-          onboardingProgress.hookInfo.progressTitle = "1/4 - Profile Generation";
+        case 'PUSH-UPGRADE-01':
+          onboardingProgress.hookInfo.progressTitle = '1/4 - Profile Generation';
           onboardingProgress.progress = 35;
           break;
-        case "PUSH-UPGRADE-02":
-          onboardingProgress.hookInfo.progressTitle = "2/4 - Decrypting Old Profile";
+        case 'PUSH-UPGRADE-02':
+          onboardingProgress.hookInfo.progressTitle = '2/4 - Decrypting Old Profile';
           onboardingProgress.progress = 50;
           break;
-        case "PUSH-UPGRADE-03":
-          onboardingProgress.hookInfo.progressTitle = "3/4 - New Profile Encryption";
+        case 'PUSH-UPGRADE-03':
+          onboardingProgress.hookInfo.progressTitle = '3/4 - New Profile Encryption';
           onboardingProgress.progress = 75;
           break;
-        case "PUSH-UPGRADE-04":
-          onboardingProgress.hookInfo.progressTitle = "4/4 - Profile Sync";
+        case 'PUSH-UPGRADE-04':
+          onboardingProgress.hookInfo.progressTitle = '4/4 - Profile Sync';
           onboardingProgress.progress = 90;
           break;
-        case "PUSH-UPGRADE-05":
-          onboardingProgress.hookInfo.progressTitle = "Push Profile Upgraded";
+        case 'PUSH-UPGRADE-05':
+          onboardingProgress.hookInfo.progressTitle = 'Push Profile Upgraded';
           onboardingProgress.progress = 99;
           break;
-        case "PUSH-ERROR-00":
-          onboardingProgress.hookInfo.progressTitle = "User Rejected Signature";
+        case 'PUSH-ERROR-00':
+          onboardingProgress.hookInfo.progressTitle = 'User Rejected Signature';
           onboardingProgress.spinnerType = LOADER_SPINNER_TYPE.ERROR;
           break;
-        case "PUSH-ERROR-01":
-          onboardingProgress.hookInfo.progressTitle = "Upgrade Failed";
+        case 'PUSH-ERROR-01':
+          onboardingProgress.hookInfo.progressTitle = 'Upgrade Failed';
           onboardingProgress.spinnerType = LOADER_SPINNER_TYPE.ERROR;
           break;
-        case "PUSH-ERROR-02":
-          onboardingProgress.hookInfo.progressTitle = "Decrypting Keys Failed";
+        case 'PUSH-ERROR-02':
+          onboardingProgress.hookInfo.progressTitle = 'Decrypting Keys Failed';
           onboardingProgress.spinnerType = LOADER_SPINNER_TYPE.ERROR;
           break;
       }
     } else {
-
     }
-    
+
     // This is a new user
     setBlockedLoading({
       enabled: onboardingProgress.enabled,
@@ -121,15 +147,14 @@ const ChatUserContextProvider = (props) => {
       progress: onboardingProgress.progress,
       progressNotice: onboardingProgress.hookInfo.progressInfo,
     });
-
   };
 
   const getUser = async () => {
-    console.log("getUser");
+    console.log('getUser');
     const caip10: string = w2wHelper.walletToCAIP10({ account });
-    const user: User = await PushAPI.user.get({ 
+    const user: User = await PushAPI.user.get({
       account: caip10,
-      env: appConfig.appEnv
+      env: appConfig.appEnv,
     });
     let connectedUser: ConnectedUser;
 
@@ -149,7 +174,7 @@ const ChatUserContextProvider = (props) => {
         signer: _signer,
         env: appConfig.appEnv,
         toUpgrade: true,
-        progressHook: onboardingProgressReformatter
+        progressHook: onboardingProgressReformatter,
       });
 
       setPgpPvtKey(privateKeyArmored);
@@ -181,51 +206,53 @@ const ChatUserContextProvider = (props) => {
   const createUserIfNecessary = async (): Promise<ConnectedUser> => {
     try {
       const signer = await library.getSigner();
-      await PushAPI.user.create({ 
+      await PushAPI.user.create({
         account: account,
         env: appConfig.appEnv,
         signer: signer,
-        progressHook: onboardingProgressReformatter
+        progressHook: onboardingProgressReformatter,
       });
       const createdUser = await PushAPI.user.get({
         account: account,
-        env: appConfig.appEnv
+        env: appConfig.appEnv,
       });
       const pvtkey = await PushAPI.chat.decryptPGPKey({
         encryptedPGPPrivateKey: createdUser.encryptedPrivateKey,
         signer: signer,
         env: appConfig.appEnv,
         toUpgrade: true,
-        progressHook: onboardingProgressReformatter
+        progressHook: onboardingProgressReformatter,
       });
 
       const createdConnectedUser = { ...createdUser, privateKey: pvtkey };
       setConnectedUser(createdConnectedUser);
       setPgpPvtKey(pvtkey);
 
-      return createdConnectedUser ;
+      return createdConnectedUser;
     } catch (e) {
       console.log(e);
     }
   };
 
   return (
-    <ChatUserContext.Provider value={{ 
-      getUser, 
-      connectedUser, 
-      setConnectedUser, 
-      blockedLoading,
-      setBlockedLoading, 
-      createUserIfNecessary,
-      pgpPvtKey,
-      setPgpPvtKey,
-      localPeer,
-      setLocalPeer,
-      connectedPeerID,
-      setConnectedPeerID,
-      displayQR,
-      setDisplayQR,
-      }}>
+    <ChatUserContext.Provider
+      value={{
+        getUser,
+        connectedUser,
+        setConnectedUser,
+        blockedLoading,
+        setBlockedLoading,
+        createUserIfNecessary,
+        pgpPvtKey,
+        setPgpPvtKey,
+        localPeer,
+        setLocalPeer,
+        connectedPeerID,
+        setConnectedPeerID,
+        displayQR,
+        setDisplayQR,
+      }}
+    >
       {props.children}
     </ChatUserContext.Provider>
   );

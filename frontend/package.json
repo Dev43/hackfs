@@ -38,6 +38,7 @@
     "@pushprotocol/socket": "latest",
     "@pushprotocol/uiweb": "1.0.2",
     "@reduxjs/toolkit": "^1.7.1",
+    "@superfluid-finance/sdk-core": "^0.6.6",
     "@testing-library/dom": "^9.0.1",
     "@testing-library/jest-dom": "^4.2.4",
     "@testing-library/react": "^9.3.2",
