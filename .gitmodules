@@ -1,3 +1,0 @@
-[submodule "hackfs-backend"]
-	path = hackfs-backend
-	url = https://github.com/Dev43/hackfs-backend.git
