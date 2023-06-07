@@ -103,9 +103,11 @@ const createInterval = () =>
 
 // create the socket
 export const beginSocket = async () => {
-  //   const { createHelia } = await import("helia");
-  //   const { unixfs } = await import("@helia/unixfs");
-  //   const helia = await createHelia();
+  const { createHelia } = await import("helia");
+  const { unixfs } = await import("@helia/unixfs");
+  const helia = await createHelia();
+  const fs = unixfs(helia);
+
   const superfluid = await Framework.create({
     chainId: 5, //your chainId here
     provider,
@@ -223,18 +225,46 @@ export const beginSocket = async () => {
         console.error(err);
       }
     } else if (message.includes("/ipfs-get")) {
+      let ipfsCID = message.replace("/ipfs-get", "").trim();
+      console.log("Fetching", ipfsCID, " on IPFS");
+      const decoder = new TextDecoder();
+      let fileContent = "";
+
+      for await (const chunk of fs.cat(ipfsCID)) {
+        fileContent += decoder.decode(chunk, {
+          stream: true,
+        });
+      }
+
+      let file = {
+        name: ipfsCID,
+        size: fileContent.length,
+        content: fileContent,
+      };
+
+      console.log("Fetched, sending chat msg");
+      await sendMessage(
+        JSON.stringify(file),
+        "File",
+        userDID,
+        pgpDecryptedPvtKey
+      );
     } else if (message.includes("/ipfs-push")) {
-      //   const fs = unixfs(helia);
-      //   // we will use this TextEncoder to turn strings into Uint8Arrays
-      //   const encoder = new TextEncoder();
-      //   // add the bytes to your node and receive a unique content identifier
-      //   const cid = await fs.addBytes(encoder.encode("Hello World 101"), {
-      //     onProgress: (evt) => {
-      //       console.info("add event", evt.type, evt.detail);
-      //     },
-      //   });
-      //   console.log("Added file:", cid.toString());
-      //   await sendMessage(cid.toString(), "Text", userDID, pgpDecryptedPvtKey);
+      // we will use this TextEncoder to turn strings into Uint8Arrays
+      const encoder = new TextEncoder();
+      // add the bytes to your node and receive a unique content identifier
+      const cid = await fs.addBytes(encoder.encode(message), {
+        onProgress: (evt) => {
+          // console.info("add event", evt.type, evt.detail);
+        },
+      });
+      console.log("Added file:", cid.toString());
+      await sendMessage(
+        `IPFS CID: ` + cid.toString(),
+        "Text",
+        userDID,
+        pgpDecryptedPvtKey
+      );
     } else if (message.includes("/fvm")) {
     } else if (message.includes("/ ")) {
     } else {
@@ -254,3 +284,5 @@ export const beginSocket = async () => {
 };
 
 beginSocket().catch(console.error);
+
+// ipfs file QmSxQCdduj4C9amh4p1GgnYFDthwQM9kcCx5N4PqMw7qAq
