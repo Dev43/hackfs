@@ -29,6 +29,8 @@ const Files = (props: FileProps) => {
       modifiedName = name;
     }
     const content = fileContent.content as string;
+    let url = URL.createObjectURL(new Blob([content]));
+
     const size = fileContent.size;
 
     return (
@@ -42,7 +44,7 @@ const Files = (props: FileProps) => {
         </FileDetails>
         <FileDownload>
           <a
-            href={content}
+            href={url}
             target="_blank"
             rel="noopener noreferrer"
             download
