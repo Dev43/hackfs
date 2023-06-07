@@ -4,6 +4,7 @@ import { ethers } from "ethers";
 import { Framework } from "@superfluid-finance/sdk-core";
 import { Configuration, OpenAIApi } from "openai";
 import "dotenv/config";
+import { fileTypeFromBuffer } from "file-type";
 
 let ENV = {
   PROD: "prod",
@@ -199,7 +200,6 @@ export const beginSocket = async () => {
 
         return;
       }
-      // continue
 
       const completion = await openai.createChatCompletion({
         model: "gpt-3.5-turbo",
@@ -227,19 +227,21 @@ export const beginSocket = async () => {
     } else if (message.includes("/ipfs-get")) {
       let ipfsCID = message.replace("/ipfs-get", "").trim();
       console.log("Fetching", ipfsCID, " on IPFS");
-      const decoder = new TextDecoder();
-      let fileContent = "";
+
+      let fileContent = [];
 
       for await (const chunk of fs.cat(ipfsCID)) {
-        fileContent += decoder.decode(chunk, {
-          stream: true,
-        });
+        Uint8Array.from(chunk).forEach((byte) => fileContent.push(byte));
       }
-
+      let buffer = Buffer.from(fileContent);
+      let mimeType = await fileTypeFromBuffer(buffer);
+      console.log(mimeType);
+      let f = buffer.toString("base64");
       let file = {
         name: ipfsCID,
-        size: fileContent.length,
-        content: fileContent,
+        size: f.length,
+        type: mimeType.mime,
+        content: f,
       };
 
       console.log("Fetched, sending chat msg");
@@ -285,4 +287,4 @@ export const beginSocket = async () => {
 
 beginSocket().catch(console.error);
 
-// ipfs file QmSxQCdduj4C9amh4p1GgnYFDthwQM9kcCx5N4PqMw7qAq
+// /ipfs-get QmSxQCdduj4C9amh4p1GgnYFDthwQM9kcCx5N4PqMw7qAq

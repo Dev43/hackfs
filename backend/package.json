@@ -17,6 +17,7 @@
     "@superfluid-finance/sdk-core": "^0.6.6",
     "dotenv": "^16.1.4",
     "ethers": "5.4.0",
+    "file-type": "^18.5.0",
     "graphql": "^16.6.0",
     "helia": "^1.2.2",
     "openai": "^3.2.1"
