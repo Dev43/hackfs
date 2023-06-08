@@ -2,10 +2,10 @@
 import { useWeb3React } from '@web3-react/core';
 import { ethers } from 'ethers';
 import React, { useContext, useEffect, useState } from 'react';
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from 'react-router-dom';
 
 // External Packages
-import * as PushAPI from "@pushprotocol/restapi";
+import * as PushAPI from '@pushprotocol/restapi';
 import ReactGA from 'react-ga';
 import { QueryClient, QueryClientProvider } from 'react-query';
 import { ReactQueryDevtools } from 'react-query/devtools';
@@ -18,12 +18,13 @@ import styled, { useTheme } from 'styled-components';
 import ChatQR from 'components/chat/w2wChat/chatQR/chatQR';
 import MobileView from 'components/chat/w2wChat/chatQR/mobileView';
 import { CreateGroupModalContent } from 'components/chat/w2wChat/groupChat/createGroup/CreateGroupModalContent';
+import { CreateFVMModalContent } from 'components/chat/w2wChat/groupChat/createGroup/CreateFVMModalContent';
 import { GroupInfoModalContent } from 'components/chat/w2wChat/groupChat/groupInfo/groupInfoModalContent';
 import LoaderSpinner, {
   LOADER_OVERLAY,
   LOADER_SPINNER_TYPE,
   LOADER_TYPE,
-  PROGRESS_POSITIONING
+  PROGRESS_POSITIONING,
 } from 'components/reusables/loaders/LoaderSpinner';
 import { ItemHV2, ItemVV2 } from 'components/reusables/SharedStylingV2';
 import { ChatUserContext } from 'contexts/ChatUserContext';
@@ -83,86 +84,96 @@ function Chat({ chatid }) {
   const containerRef = React.useRef(null);
   // For video calling
 
-  const socketData = useSDKSocket({ account, chainId, env: appConfig.appEnv,socketType: 'chat' });
+  const socketData = useSDKSocket({ account, chainId, env: appConfig.appEnv, socketType: 'chat' });
 
-  useEffect(()=>{
-    if(connectedUser && socketData.messagesSinceLastConnection && ((w2wHelper.caip10ToWallet(socketData.messagesSinceLastConnection.fromCAIP10)).toLowerCase() !== account.toLowerCase())){
-      if(currentChat)
-        getUpdatedChats(socketData.messagesSinceLastConnection);
-      getUpdatedInbox(socketData.messagesSinceLastConnection)
+  useEffect(() => {
+    if (
+      connectedUser &&
+      socketData.messagesSinceLastConnection &&
+      w2wHelper.caip10ToWallet(socketData.messagesSinceLastConnection.fromCAIP10).toLowerCase() !==
+        account.toLowerCase()
+    ) {
+      if (currentChat) getUpdatedChats(socketData.messagesSinceLastConnection);
+      getUpdatedInbox(socketData.messagesSinceLastConnection);
     }
-  },[socketData.messagesSinceLastConnection])
+  }, [socketData.messagesSinceLastConnection]);
 
-  useEffect(()=>{
-    if(connectedUser && socketData.groupInformationSinceLastConnection) {
+  useEffect(() => {
+    if (connectedUser && socketData.groupInformationSinceLastConnection) {
       getUpdatedGroup(socketData.groupInformationSinceLastConnection);
     }
-  },[socketData.groupInformationSinceLastConnection])
+  }, [socketData.groupInformationSinceLastConnection]);
 
-  const getUpdatedChats = async(chat) => {
-    if((currentChat.did?.toLowerCase() === chat.fromCAIP10?.toLowerCase()) || currentChat?.groupInformation?.chatId === chat.toCAIP10){
-    const decryptedChat:MessageIPFS = await w2wHelper.decryptMessages({
-      savedMsg: chat,
-      connectedUser,
-      account,
-      currentChat,
-      inbox
-    });
-    setMessages([...messages,{...decryptedChat,cid:socketData.messagesSinceLastConnection.cid}]);
+  const getUpdatedChats = async (chat) => {
+    if (
+      currentChat.did?.toLowerCase() === chat.fromCAIP10?.toLowerCase() ||
+      currentChat?.groupInformation?.chatId === chat.toCAIP10
+    ) {
+      const decryptedChat: MessageIPFS = await w2wHelper.decryptMessages({
+        savedMsg: chat,
+        connectedUser,
+        account,
+        currentChat,
+        inbox,
+      });
+      setMessages([...messages, { ...decryptedChat, cid: socketData.messagesSinceLastConnection.cid }]);
     }
-  }
+  };
 
-  const getUpdatedInbox = async(message) => {
+  const getUpdatedInbox = async (message) => {
     let isInInbox = false;
-    let decryptedChat:MessageIPFS;
+    let decryptedChat: MessageIPFS;
 
     //change to common decryption for getUpdatedInbox and getUpdatedChats using filter
-    const updatedFeed = inbox.filter(feed=>(feed.did?.toLowerCase() === message.fromCAIP10?.toLowerCase()) || (feed?.groupInformation?.chatId === message.toCAIP10));
-   if(updatedFeed.length){
-     decryptedChat = await w2wHelper.decryptMessages({
-      savedMsg: message,
-      connectedUser,
-      account,
-      currentChat:updatedFeed[0],
-      inbox
-    });
-
-  }
-    const updatedInbox = inbox.map(feed => {
-      if((feed.did?.toLowerCase() === message.fromCAIP10?.toLowerCase()) || feed?.groupInformation?.chatId === message.toCAIP10){
+    const updatedFeed = inbox.filter(
+      (feed) =>
+        feed.did?.toLowerCase() === message.fromCAIP10?.toLowerCase() ||
+        feed?.groupInformation?.chatId === message.toCAIP10
+    );
+    if (updatedFeed.length) {
+      decryptedChat = await w2wHelper.decryptMessages({
+        savedMsg: message,
+        connectedUser,
+        account,
+        currentChat: updatedFeed[0],
+        inbox,
+      });
+    }
+    const updatedInbox = inbox.map((feed) => {
+      if (
+        feed.did?.toLowerCase() === message.fromCAIP10?.toLowerCase() ||
+        feed?.groupInformation?.chatId === message.toCAIP10
+      ) {
         feed.msg = decryptedChat;
         isInInbox = true;
       }
       return feed;
     });
-    if(isInInbox){
-
-    setInbox(updatedInbox);
-    }
-    else {
+    if (isInInbox) {
+      setInbox(updatedInbox);
+    } else {
       //update msg for already received intents
       const intents = await fetchIntent(connectedUser);
       setReceivedIntents(intents);
     }
-  }
+  };
 
-  const getUpdatedGroup = async(groupInfo) => {
+  const getUpdatedGroup = async (groupInfo) => {
     let isInInbox = false;
-    const updatedInbox = inbox.map(feed => {
-      if(feed?.groupInformation?.chatId === groupInfo.chatId){
+    const updatedInbox = inbox.map((feed) => {
+      if (feed?.groupInformation?.chatId === groupInfo.chatId) {
         feed.groupInformation = groupInfo;
         isInInbox = true;
       }
       return feed;
     });
-    if(isInInbox){
-    setInbox(updatedInbox);
-    }
-    else {
+    if (isInInbox) {
+      setInbox(updatedInbox);
+    } else {
       const intents = await fetchIntent(connectedUser);
       setReceivedIntents(intents);
     }
-  }
+  };
 
   const [videoCallInfo, setVideoCallInfo] = useState<VideoCallInfoI>({
     address: null,
@@ -170,12 +181,11 @@ function Chat({ chatid }) {
     toPublicKeyArmored: null,
     privateKeyArmored: null,
     establishConnection: 0,
-    chatId: null
+    chatId: null,
   });
 
   // React GA Analytics
   ReactGA.pageview('/chat');
-
 
   useEffect(() => {
     if (videoCallInfo) {
@@ -189,13 +199,13 @@ function Chat({ chatid }) {
       const fetchUser = async () => {
         return PushAPI.user.get({
           account: caip10ToWallet(call.from),
-          env: appConfig.appEnv
+          env: appConfig.appEnv,
         });
-      }
+      };
 
       // call the function
       fetchUser()
-        .then (fromUser => {
+        .then((fromUser) => {
           // set video call
           setVideoCallInfo({
             address: call.from,
@@ -209,8 +219,8 @@ function Chat({ chatid }) {
             establishConnection: 2,
           });
         })
-        .catch(e => {
-          console.log("Error occured in ChatModule::useEffect::callAccepted - ", e);
+        .catch((e) => {
+          console.log('Error occured in ChatModule::useEffect::callAccepted - ', e);
         });
     }
   }, [call]);
@@ -220,13 +230,13 @@ function Chat({ chatid }) {
       const fetchUser = async () => {
         return PushAPI.user.get({
           account: caip10ToWallet(call.from),
-          env: appConfig.appEnv
+          env: appConfig.appEnv,
         });
-      }
+      };
 
       // call the function
       fetchUser()
-        .then (fromUser => {
+        .then((fromUser) => {
           // set video call
           setVideoCallInfo({
             address: call.from,
@@ -240,13 +250,13 @@ function Chat({ chatid }) {
             establishConnection: 3,
           });
         })
-        .catch(e => {
-          console.log("Error occured in ChatModule::useEffect::callAccepted - ", e);
+        .catch((e) => {
+          console.log('Error occured in ChatModule::useEffect::callAccepted - ', e);
         });
     }
   }, [callAccepted]);
 
-  useEffect(()=>{
+  useEffect(() => {
     setChat(null);
     setInbox([]);
     setReceivedIntents([]);
@@ -254,7 +264,7 @@ function Chat({ chatid }) {
     setViewChatBox(false);
     setIsLoading(true);
     setConnectedUser(null);
-  },[account])
+  }, [account]);
 
   // Rest of the loading logic
   useEffect(() => {
@@ -285,19 +295,22 @@ function Chat({ chatid }) {
     ModalComponent: CreateGroupModalComponent,
   } = useModalBlur();
 
+  const {
+    isModalOpen: isCreateFVMModalOpen,
+    showModal: showCreateFVMModal,
+    ModalComponent: CreateFVMModalComponent,
+  } = useModalBlur();
 
   const connectUser = async (): Promise<void> => {
-    const caip10:string = w2wHelper.walletToCAIP10({account});
+    const caip10: string = w2wHelper.walletToCAIP10({ account });
 
-    
-    if(connectedUser?.wallets?.toLowerCase() !== caip10?.toLowerCase()){
+    if (connectedUser?.wallets?.toLowerCase() !== caip10?.toLowerCase()) {
       await getUser();
     }
 
-
     setBlockedLoading({
       enabled: false,
-      title: "Push Profile Setup Complete",
+      title: 'Push Profile Setup Complete',
       spinnerType: LOADER_SPINNER_TYPE.COMPLETED,
       progressEnabled: false,
       progress: 100,
@@ -309,7 +322,7 @@ function Chat({ chatid }) {
       // reformat chatid first
       chatid = reformatChatId(chatid);
 
-      if(connectedUser?.wallets?.toLowerCase() === caip10?.toLowerCase()){
+      if (connectedUser?.wallets?.toLowerCase() === caip10?.toLowerCase()) {
         // dynamic url
         setCurrentTab(4);
       }
@@ -372,15 +385,14 @@ function Chat({ chatid }) {
     }
 
     return chatid;
-  }
+  };
 
   let navigate = useNavigate();
   const setChat = (feed: Feeds): void => {
     if (feed) {
       setViewChatBox(true);
-      if(checkIfGroup(feed))
-      {
-        rearrangeMembers(feed,connectedUser);
+      if (checkIfGroup(feed)) {
+        rearrangeMembers(feed, connectedUser);
       }
 
       // check and set to wallet or chat id
@@ -442,13 +454,20 @@ function Chat({ chatid }) {
                 background={theme.default.bg}
                 chatActive={viewChatBox}
               >
-                <ChatSidebarSection showCreateGroupModal={showCreateGroupModal} autofilledSearch={chatid} />
+                <ChatSidebarSection
+                  showCreateGroupModal={showCreateGroupModal}
+                  showCreateFVMModal={showCreateFVMModal}
+                  autofilledSearch={chatid}
+                />
               </ChatSidebarContainer>
               <ChatContainer
                 padding="10px 10px 10px 10px"
                 chatActive={viewChatBox}
               >
-                <ChatBoxSection setVideoCallInfo={setVideoCallInfo} showGroupInfoModal={showGroupInfoModal}/>
+                <ChatBoxSection
+                  setVideoCallInfo={setVideoCallInfo}
+                  showGroupInfoModal={showGroupInfoModal}
+                />
               </ChatContainer>
               <GroupInfoModalComponent
                 InnerComponent={GroupInfoModalContent}
@@ -456,9 +475,15 @@ function Chat({ chatid }) {
                 toastObject={groupInfoToast}
                 modalPadding="0px"
                 modalPosition={MODAL_POSITION.ON_PARENT}
-                />
+              />
               <CreateGroupModalComponent
                 InnerComponent={CreateGroupModalContent}
+                toastObject={createGroupToast}
+                modalPadding="0px"
+                modalPosition={MODAL_POSITION.ON_PARENT}
+              />
+              <CreateFVMModalComponent
+                InnerComponent={CreateFVMModalContent}
                 toastObject={createGroupToast}
                 modalPadding="0px"
                 modalPosition={MODAL_POSITION.ON_PARENT}
@@ -535,7 +560,7 @@ function Chat({ chatid }) {
                 toProfilePic: null,
                 privateKeyArmored: null,
                 establishConnection: 0,
-                chatId: null
+                chatId: null,
               });
             }}
           />

@@ -21,6 +21,8 @@ import AutoImageClipper from 'primaries/AutoImageClipper';
 import useToast from 'hooks/useToast';
 
 export const GroupDetailsContent = ({
+  title,
+  thing,
   groupNameData,
   groupDescriptionData,
   groupImageData,
@@ -31,10 +33,10 @@ export const GroupDetailsContent = ({
   handleGroupTypeObject,
   handleCreateGroupState,
   handlePrevious,
-  handleClose
+  handleClose,
 }) => {
   const [imageSrc, setImageSrc] = React.useState();
-  const [isImageUploaded, setIsImageUploaded] = React.useState<boolean>(false)
+  const [isImageUploaded, setIsImageUploaded] = React.useState<boolean>(false);
   const [isLoading, setIsLoading] = React.useState<boolean>(false);
   const fileUploadInputRef = React.useRef<HTMLInputElement>();
   const [errorInfo, setErrorInfo] = React.useState<{ name: string; description: string }>({
@@ -58,10 +60,10 @@ export const GroupDetailsContent = ({
   ];
 
   const themes = useTheme();
-  const groupDetailToast=useToast();
+  const groupDetailToast = useToast();
 
   const handleFile = async (e) => {
-    setIsImageUploaded(true)
+    setIsImageUploaded(true);
     handleGroupImageData(undefined);
 
     //you can carry out any file validations here...
@@ -73,7 +75,7 @@ export const GroupDetailsContent = ({
         setImageSrc(reader.result);
       };
     } else {
-      return "Nothing....";
+      return 'Nothing....';
     }
   };
 
@@ -83,30 +85,29 @@ export const GroupDetailsContent = ({
       if (typeof getGroupResponse !== 'string') {
         setErrorInfo((x) => ({
           ...x,
-          name: 'Group Name should be unique! Please retry!',
+          name: thing + ' Name should be unique! Please retry!',
         }));
 
         return false;
       }
-    } catch (e) { 
-      groupDetailToast.showMessageToast({
-        toastTitle: 'Error',
-        toastMessage: 'Error in finding group name',
-        toastType: 'ERROR',
-        getToastIcon: (size) => (
-          <MdError
-            size={size}
-            color="red"
-          />
-        ),
-      });
-
+    } catch (e) {
+      // groupDetailToast.showMessageToast({
+      //   toastTitle: 'Error',
+      //   toastMessage: 'Error in finding group name',
+      //   toastType: 'ERROR',
+      //   getToastIcon: (size) => (
+      //     <MdError
+      //       size={size}
+      //       color="red"
+      //     />
+      //   ),
+      // });
     }
 
     if (!isLengthValid(groupNameData, 50)) {
       setErrorInfo((x) => ({
         ...x,
-        name: 'Group Name should not exceed 50 characters! Please retry!',
+        name: thing + ' Name should not exceed 50 characters! Please retry!',
       }));
 
       return false;
@@ -114,7 +115,7 @@ export const GroupDetailsContent = ({
     if (!isLengthValid(groupDescriptionData, 150, 3)) {
       setErrorInfo((x) => ({
         ...x,
-        description: 'Group Description should be between 3 to 150 characters! Please retry!',
+        description: thing + ' Description should be between 3 to 150 characters! Please retry!',
       }));
 
       return false;
@@ -136,20 +137,15 @@ export const GroupDetailsContent = ({
 
   return (
     <ThemeProvider theme={themes}>
-
-
       <GroupModalHeader
         handleClose={handleClose}
-        title={"Create Group"}
+        title={title}
       />
-
-
 
       <Container>
         <GroupIconContainer onClick={handleUpload}>
-          {isImageUploaded
-            ? groupImageData
-              ?
+          {isImageUploaded ? (
+            groupImageData ? (
               <ItemVV2
                 maxWidth="128px"
                 height="128px"
@@ -161,16 +157,17 @@ export const GroupDetailsContent = ({
                   style={{ objectFit: 'contain' }}
                 />
               </ItemVV2>
-              :
+            ) : (
               <AutoImageClipper
                 imageSrc={imageSrc}
                 onImageCropped={(croppedImage) => handleGroupImageData(croppedImage)}
               />
-            : themes.scheme == 'light' ? (
-              <AddGroupIcon />
-            ) : (
-              <AddGroupIconDark />
-            )}
+            )
+          ) : themes.scheme == 'light' ? (
+            <AddGroupIcon />
+          ) : (
+            <AddGroupIconDark />
+          )}
           <FileInput
             type="file"
             ref={fileUploadInputRef}
@@ -180,7 +177,7 @@ export const GroupDetailsContent = ({
         </GroupIconContainer>
         <TextFieldContainer>
           <TextFieldHeaderContainer>
-            <TextFieldHeading color={themes.modalHeadingColor}>Group Name</TextFieldHeading>
+            <TextFieldHeading color={themes.modalHeadingColor}>{thing} Name</TextFieldHeading>
             <CharacterCount color={themes.modalSecondaryTextColor}>{50 - groupNameData.length}</CharacterCount>
           </TextFieldHeaderContainer>
           <CustomInput
@@ -194,7 +191,7 @@ export const GroupDetailsContent = ({
         </TextFieldContainer>
         <TextFieldContainer>
           <TextFieldHeaderContainer>
-            <TextFieldHeading color={themes.modalHeadingColor}>Group Description</TextFieldHeading>
+            <TextFieldHeading color={themes.modalHeadingColor}>{thing} Description</TextFieldHeading>
             <CharacterCount color={themes.modalSecondaryTextColor}>{150 - groupDescriptionData.length}</CharacterCount>
           </TextFieldHeaderContainer>
           <GroupDescription
@@ -207,7 +204,7 @@ export const GroupDetailsContent = ({
           {errorInfo?.description && <ErrorMessage message={errorInfo?.description} />}
         </TextFieldContainer>
         <ItemVV2 alignItems="baseline">
-          <TextFieldHeading color={themes.modalHeadingColor}>Group Type</TextFieldHeading>
+          <TextFieldHeading color={themes.modalHeadingColor}>{thing} Type</TextFieldHeading>
           <OptionsContainer>
             {options.map((option) => {
               return (
@@ -272,7 +269,7 @@ export const GroupDetailsContent = ({
 };
 
 const Container = styled.div`
-  display:flex;
+  display: flex;
   flex-direction: column;
   padding: 42px 22px 0px 26px;
   overflow-y: auto;
@@ -282,20 +279,20 @@ const Container = styled.div`
   }
   &&::-webkit-scrollbar-thumb {
     background: #d53a94;
-    border-bottom:200px solid transparent;
-    background-clip:padding-box;
+    border-bottom: 200px solid transparent;
+    background-clip: padding-box;
   }
   @media ${device.mobileL} {
     padding: 42px 18px 42px 26px;
     &&::-webkit-scrollbar-thumb {
-      border-bottom:400px solid transparent;
+      border-bottom: 400px solid transparent;
     }
   }
 `;
 
 const GroupIconContainer = styled.div`
-  min-width:128px;
-  min-height:128px;
+  min-width: 128px;
+  min-height: 128px;
   width: fit-content;
   display: flex;
   justify-content: center;

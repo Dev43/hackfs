@@ -61,7 +61,7 @@ const createGroupOnMouseLeave = [
 
 // Chat Sections
 // Divided into two, left and right
-const ChatSidebarSection = ({ showCreateGroupModal, autofilledSearch }) => {
+const ChatSidebarSection = ({ showCreateGroupModal, showCreateFVMModal, autofilledSearch }) => {
   // theme context
   const theme = useTheme();
 
@@ -205,7 +205,7 @@ const ChatSidebarSection = ({ showCreateGroupModal, autofilledSearch }) => {
               flex="none"
               padding="20px 10px 24px 10px"
               borderRadius={GLOBALS.ADJUSTMENTS.RADIUS.MID}
-              onClick={() => showCreateGroupModal()}
+              onClick={() => showCreateFVMModal()}
               background="transparent"
               hover={theme.chat.snapFocusBg}
               hoverBackground="transparent"

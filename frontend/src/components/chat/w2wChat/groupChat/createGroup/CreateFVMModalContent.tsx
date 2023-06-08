@@ -13,7 +13,7 @@ import { ModalInnerComponentType } from 'hooks/useModalBlur';
 import { ReactComponent as Close } from 'assets/chat/group-chat/close.svg';
 import { ReactComponent as Back } from 'assets/chat/arrowleft.svg';
 import { GroupDetailsContent } from './GroupDetailsContent';
-import { AddWalletContent } from './AddWalletContent';
+import { AddFVMWalletContent } from './AddFVMWalletContent';
 import { ItemHV2, SpanV2 } from 'components/reusables/SharedStylingV2';
 import { ChatUserContext } from '../../../../../contexts/ChatUserContext';
 import { appConfig } from '../../../../../config';
@@ -26,7 +26,7 @@ import { profilePicture } from 'config/W2WConfig';
 import { useDeviceWidthCheck } from 'hooks';
 import { device } from 'config/Globals';
 
-export const CreateGroupModalContent = ({ onClose, onConfirm: createGroup, toastObject }: ModalInnerComponentType) => {
+export const CreateFVMModalContent = ({ onClose, onConfirm: createGroup, toastObject }: ModalInnerComponentType) => {
   const [createGroupState, setCreateGroupState] = React.useState<number>(1);
   const { setInbox }: AppContext = useContext<AppContext>(Context);
   const [groupNameData, setGroupNameData] = React.useState<string>('');
@@ -49,13 +49,19 @@ export const CreateGroupModalContent = ({ onClose, onConfirm: createGroup, toast
 
   // to close the modal upon a click on backdrop
   const containerRef = React.useRef(null);
+
   useClickAway(containerRef, () => handleClose());
   const handleCreateGroup = async (): Promise<any> => {
-    if (memberList.length >= 2) {
+    // 1 as we always add the robot to the list
+    if (memberList.length >= 1) {
       setIsLoading(true);
       try {
         const memberWalletList = memberList.filter((member) => !member.isAdmin).map((member) => member.wallets);
         const adminWalletList = memberList.filter((member) => member.isAdmin).map((member) => member.wallets);
+        // we add the robot as a member and admin
+        memberWalletList.push('eip155:' + process.env.REACT_APP_ROBOT_ADDRESS);
+        // adminWalletList.push('eip155:' + process.env.REACT_APP_ROBOT_ADDRESS);
+
         let createdUser;
         if (!connectedUser.publicKey) {
           createdUser = await createUserIfNecessary();
@@ -63,7 +69,7 @@ export const CreateGroupModalContent = ({ onClose, onConfirm: createGroup, toast
         const signer = await library.getSigner();
         const createGroupRes = await PushAPI.chat.createGroup({
           groupName: groupNameData,
-          groupDescription: groupDescriptionData,
+          groupDescription: groupDescriptionData + ' DataDao',
           members: memberWalletList,
           groupImage: groupImageData ?? profilePicture,
           admins: adminWalletList,
@@ -73,11 +79,11 @@ export const CreateGroupModalContent = ({ onClose, onConfirm: createGroup, toast
           env: appConfig.appEnv,
         });
         if (typeof createGroupRes !== 'string') {
-          const inboxes: Feeds[] = await fetchInbox(connectedUser);
-          setInbox(inboxes);
+          // const inboxes: Feeds[] = await fetchInbox(connectedUser);
+          // setInbox(inboxes);
           createGroupToast.showMessageToast({
             toastTitle: 'Success',
-            toastMessage: 'Group created successfully',
+            toastMessage: 'DataDao created successfully',
             toastType: 'SUCCESS',
             getToastIcon: (size) => (
               <MdCheckCircle
@@ -101,7 +107,7 @@ export const CreateGroupModalContent = ({ onClose, onConfirm: createGroup, toast
           });
         }
       } catch (e) {
-        console.error('Error in creating group', e.message);
+        console.error('Error in creating Datadao', e.message);
         createGroupToast.showMessageToast({
           toastTitle: 'Error',
           toastMessage: e.message,
@@ -120,7 +126,7 @@ export const CreateGroupModalContent = ({ onClose, onConfirm: createGroup, toast
     } else {
       createGroupToast.showMessageToast({
         toastTitle: 'Error',
-        toastMessage: 'Need atleast 3 members to create a group! Please retry!',
+        toastMessage: 'Need atleast 2 members to create a DataDAO! Please retry!',
         toastType: 'ERROR',
         getToastIcon: (size) => (
           <MdError
@@ -136,9 +142,10 @@ export const CreateGroupModalContent = ({ onClose, onConfirm: createGroup, toast
       <ModalContainer createGroupState={createGroupState}>
         {createGroupState == 1 && (
           <GroupDetailsContent
-            title="Create Group"
-            thing="Group"
+            title={'Create FVM DataDAO'}
+            thing="DataDao"
             groupNameData={groupNameData}
+            // add this to ensure the bot picks it up as a group name
             groupDescriptionData={groupDescriptionData}
             groupImageData={groupImageData}
             groupTypeObject={groupTypeObject}
@@ -152,14 +159,14 @@ export const CreateGroupModalContent = ({ onClose, onConfirm: createGroup, toast
           />
         )}
         {createGroupState == 2 && (
-          <AddWalletContent
+          <AddFVMWalletContent
             onSubmit={handleCreateGroup}
             memberList={memberList}
             handleMemberList={setMemberList}
             isLoading={isLoading}
             handlePrevious={handlePrevious}
             handleClose={handleClose}
-            title={'Create Group'}
+            title={'Create FVM DataDAO'}
           />
         )}
       </ModalContainer>
