@@ -24,6 +24,8 @@ const erc20_abi = [
   "event Transfer(address indexed from, address indexed to, uint amount)",
 ];
 
+const currentlyDeploying = {};
+
 const configuration = new Configuration({
   apiKey: process.env.OPENAI_KEY,
 });
@@ -39,6 +41,11 @@ const provider = new ethers.providers.InfuraProvider(
   "cd9284d8201641c5a4cfe394661641e2"
 );
 const wallet = new ethers.Wallet(PK, provider);
+
+const filprovider = new ethers.providers.JsonRpcProvider(
+  "https://api.calibration.node.glif.io/rpc/v1"
+);
+const filWallet = new ethers.Wallet(PK, filprovider);
 
 const preProcessRawMessage = async (robot, message) => {
   console.log(message);
@@ -77,7 +84,7 @@ const createInterval = () =>
     });
 
     // need to decrypt the encryptedPvtKey to pass in the api using helper function
-    const pgpDecrpyptedPvtKey = await PushAPI.chat.decryptPGPKey({
+    const pgpDecryptedPvtKey = await PushAPI.chat.decryptPGPKey({
       encryptedPGPPrivateKey: robot.encryptedPrivateKey,
       signer: _signer,
     });
@@ -86,7 +93,7 @@ const createInterval = () =>
     const requests = await PushAPI.chat.requests({
       account: `eip155:${process.env.ROBOT_ADDRESS}`,
       toDecrypt: true,
-      pgpPrivateKey: pgpDecrpyptedPvtKey,
+      pgpPrivateKey: pgpDecryptedPvtKey,
       env: ENV.DEV,
     });
     for (const req of requests) {
@@ -100,26 +107,15 @@ const createInterval = () =>
           account: `eip155:${process.env.ROBOT_ADDRESS}`,
           senderAddress: req.wallets, // receiver's address or chatId of a group
           signer: _signer,
-          pgpPrivateKey: pgpDecrpyptedPvtKey,
+          pgpPrivateKey: pgpDecryptedPvtKey,
         });
       } else {
         // if it's a group for a DataDAO - then we deploy the contracts
         let isDataDao =
           req.groupInformation.groupDescription.includes("DataDao");
         if (isDataDao) {
-          // get all the admin members in the members object
-          let memberList = req.groupInformation?.members;
-          let pendingMembers = req.groupInformation?.pendingMembers;
-          memberList.push(pendingMembers);
-
-          const memberWalletList = memberList.map((member) => member.wallet);
-
           try {
-            await deployDataDao(
-              req.chatId,
-              memberWalletList,
-              pgpDecrpyptedPvtKey
-            );
+            await deployDataDao(req.chatId, pgpDecryptedPvtKey);
             // this one is from a group
             await PushAPI.chat.approve({
               env: ENV.DEV,
@@ -127,7 +123,7 @@ const createInterval = () =>
               account: `eip155:${process.env.ROBOT_ADDRESS}`,
               senderAddress: req.chatId, // receiver's address or chatId of a group
               signer: _signer,
-              pgpPrivateKey: pgpDecrpyptedPvtKey,
+              pgpPrivateKey: pgpDecryptedPvtKey,
             });
           } catch (e) {
             console.log(e);
@@ -326,13 +322,7 @@ export const beginSocket = async () => {
         chatId: chatID,
       });
 
-      let memberList = req.members;
-      let pendingMembers = req.pendingMembers;
-      memberList.push(pendingMembers);
-
-      const memberWalletList = memberList.map((member) => member.wallet);
-
-      await deployDataDao(chatID, memberWalletList, pgpDecryptedPvtKey);
+      await deployDataDao(chatID, pgpDecryptedPvtKey);
     } else if (message.includes("/fvm-delegate-votes")) {
       // delegate to themselves
       // send back button so they can delegate to themselves
@@ -360,48 +350,50 @@ export const beginSocket = async () => {
     });
   };
 };
-const deployDataDao = async (chatID, memberWalletList, pgpDecryptedPvtKey) => {
+const deployDataDao = async (chatID, pgpDecryptedPvtKey) => {
   const command = spawn("yarn", ["hardhat", "deploy"], {
     cwd: "../fevm-dao",
   });
   command.stdout.on("data", async (chunk) => {
     console.log(`stdout: ${chunk}`);
+    if (currentlyDeploying[chatID]) {
+      return;
+    }
+    currentlyDeploying[chatID] = true;
     let data = chunk.toString();
+
     if (data.includes("!Success!")) {
       let d = data.split("!Success!")[1];
       let deployed = JSON.parse(d);
       console.log(deployed);
-      console.log("chatID:", chatID);
 
+      let governanceAddress = deployed.governor;
+      let dealDaoAddress = deployed.daoDeal;
       let tokenAddress = deployed.dataGovernanceToken;
-      let membersOtherThanRobot = memberWalletList.filter(
-        (x) => x !== "eip155:" + process.env.ROBOT_ADDRESS
-      );
-
-      const erc20_rw = new ethers.Contract(tokenAddress, erc20_abi, _signer);
-
-      for (members of membersOtherThanRobot) {
-        // 10 each
-        await erc20_rw.transfer(member, "10000000000000000000");
-      }
+      let timeLock = deployed.timeLock;
 
       let req = await PushAPI.chat.getGroup({
         env: ENV.DEV,
         chatId: chatID,
       });
 
-      const response = await PushAPI.chat.updateGroup({
-        env: ENV.DEV,
-        chatId: chatID,
-        groupName: req.groupName,
-        groupDescription: d,
-        members: req.members,
-        groupImage: req.groupImage,
-        admins: req.admins,
-        account: process.env.ROBOT_ADDRESS,
-        pgpPrivateKey: pgpDecryptedPvtKey, //decrypted private key
-      });
-      console.log(response);
+      let memberList = req.members.map((member) => member.wallet);
+      let pendingList = req.pendingMembers.map((member) => member.wallet);
+      memberList.push(...pendingList);
+
+      let membersOtherThanRobot = memberList.filter(
+        (x) => x !== "eip155:" + process.env.ROBOT_ADDRESS
+      );
+
+      const erc20_rw = new ethers.Contract(tokenAddress, erc20_abi, filWallet);
+
+      for (const member of membersOtherThanRobot) {
+        // 10 each
+        console.log("sending tokens to ", member);
+        let address = member.split("eip155:")[1];
+        let tx = await erc20_rw.transfer(address, "10000000000000000000");
+        await tx.wait();
+      }
 
       await PushAPI.chat.send({
         env: ENV.DEV,
@@ -420,6 +412,7 @@ const deployDataDao = async (chatID, memberWalletList, pgpDecryptedPvtKey) => {
         signer: _signer,
         pgpPrivateKey: pgpDecryptedPvtKey,
       });
+      currentlyDeploying[chatID] = false;
     }
   });
 
