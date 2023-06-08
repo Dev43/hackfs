@@ -397,9 +397,20 @@ function Navigation() {
       //   dispatch(setDeveloperOpen(false))
       // }
       let innerRendered = (
-        <Section key={key} flex="1" align="stretch" size={fontSize}>
+        <Section
+          key={key}
+          flex="1"
+          align="stretch"
+          size={fontSize}
+        >
           {secondaryButton ? (
-            <Item padding="5px 10px" flexBasis="100%" align="stretch" direction="row" overflow="hidden">
+            <Item
+              padding="5px 10px"
+              flexBasis="100%"
+              align="stretch"
+              direction="row"
+              overflow="hidden"
+            >
               {section.hasItems
                 ? renderChildItems(data.drilldown, section.opened, GLOBALS.CONSTANTS.NAVBAR_SECTIONS.PRIMARY)
                 : null}
@@ -414,12 +425,25 @@ function Navigation() {
                   // console.log(`Clicked secondary button`);
                   mutateTransformedList(section, true);
                 }}
-                id={data.id}>
-                <NavigationButton item={section} data={data} sectionID={sectionID} active={section.active} bg={!section.active ? 'transparent' : theme.nav.activeColor} />
+                id={data.id}
+              >
+                <NavigationButton
+                  item={section}
+                  data={data}
+                  sectionID={sectionID}
+                  active={section.active}
+                  bg={!section.active ? 'transparent' : theme.nav.activeColor}
+                />
               </SectionInnerGroupContainer>
             </Item>
           ) : (
-            <Item padding="5px 10px" flexBasis="100%" align="stretch" direction="row" overflow="hidden">
+            <Item
+              padding="5px 10px"
+              flexBasis="100%"
+              align="stretch"
+              direction="row"
+              overflow="hidden"
+            >
               <SectionInnerGroupContainer
                 flex="1"
                 align="stretch"
@@ -450,9 +474,15 @@ function Navigation() {
                       // if (stepIndex === 1 && uid === 2)dispatch(setTutorialContinous(true));
                     }, 500);
                   }
-                }}>
-                <NavigationButton item={section} data={data} sectionID={sectionID} active={section.active}
-                  bg={!section.active ? 'transparent' : theme.nav.activeColor} />
+                }}
+              >
+                <NavigationButton
+                  item={section}
+                  data={data}
+                  sectionID={sectionID}
+                  active={section.active}
+                  bg={!section.active ? 'transparent' : theme.nav.activeColor}
+                />
               </SectionInnerGroupContainer>
 
               {/* { 
@@ -491,12 +521,22 @@ function Navigation() {
     }
 
     let rendered = (
-      <SectionGroup align="stretch" margin="10px 0px" opened={opened} refresh={refresh}>
+      <SectionGroup
+        align="stretch"
+        margin="10px 0px"
+        opened={opened}
+        refresh={refresh}
+      >
         {Object.keys(drilldown).map(function (key) {
           const item = drilldown[key];
           const data = item.data;
           return (
-            <SectionItem key={key} flex="1" align="stretch" size="small">
+            <SectionItem
+              key={key}
+              flex="1"
+              align="stretch"
+              size="small"
+            >
               <SectionInnerItemContainer
                 flex="1"
                 align="stretch"
@@ -518,9 +558,15 @@ function Navigation() {
                   }
                   // console.log(`Clicked  button`);
                   // mutateTransformedList(item)
-                }}>
-                <NavigationButton item={item} data={data} sectionID={sectionID} active={item.active}
-                  bg={!item.active ? 'transparent' : theme.nav.activeColor} />
+                }}
+              >
+                <NavigationButton
+                  item={item}
+                  data={data}
+                  sectionID={sectionID}
+                  active={item.active}
+                  bg={!item.active ? 'transparent' : theme.nav.activeColor}
+                />
               </SectionInnerItemContainer>
             </SectionItem>
           );
@@ -532,109 +578,110 @@ function Navigation() {
   };
 
   return (
-    <Container direction="column" headerHeight={GLOBALS.CONSTANTS.HEADER_HEIGHT}>
-      {!navigationSetup && (
-        <Item padding="20px" justify="flex-start">
-          <LoaderSpinner type={LOADER_TYPE.SEAMLESS} spinnerSize={24} />
-        </Item>
-      )}
-      {navigationSetup && Object.keys(navigationSetup).length > 0 && (
-        <>
-          <Primary>
-            {renderMainItems(navigationSetup.primary, GLOBALS.CONSTANTS.NAVBAR_SECTIONS.PRIMARY)}
+    // <Container direction="column" headerHeight={GLOBALS.CONSTANTS.HEADER_HEIGHT}>
+    //   {!navigationSetup && (
+    //     <Item padding="20px" justify="flex-start">
+    //       <LoaderSpinner type={LOADER_TYPE.SEAMLESS} spinnerSize={24} />
+    //     </Item>
+    //   )}
+    //   {navigationSetup && Object.keys(navigationSetup).length > 0 && (
+    //     <>
+    //       <Primary>
+    //         {renderMainItems(navigationSetup.primary, GLOBALS.CONSTANTS.NAVBAR_SECTIONS.PRIMARY)}
 
-            <Span
-              textTransform="uppercase"
-              weight="700"
-              size="11px"
-              margin="20px 0px 0px 0px"
-              padding="15px 30px"
-              color="#575D73"
-              spacing="0.16em">
-              Developers
-            </Span>
-            {renderMainItems(navigationSetup.secondary, GLOBALS.CONSTANTS.NAVBAR_SECTIONS.SECONDARY)}
-          </Primary>
-          <Footer justify="flex-end" align="stretch">
-            {renderMainItems(navigationSetup.third, GLOBALS.CONSTANTS.NAVBAR_SECTIONS.THIRD)}
+    //         <Span
+    //           textTransform="uppercase"
+    //           weight="700"
+    //           size="11px"
+    //           margin="20px 0px 0px 0px"
+    //           padding="15px 30px"
+    //           color="#575D73"
+    //           spacing="0.16em">
+    //           Developers
+    //         </Span>
+    //         {renderMainItems(navigationSetup.secondary, GLOBALS.CONSTANTS.NAVBAR_SECTIONS.SECONDARY)}
+    //       </Primary>
+    //       <Footer justify="flex-end" align="stretch">
+    //         {renderMainItems(navigationSetup.third, GLOBALS.CONSTANTS.NAVBAR_SECTIONS.THIRD)}
 
-            {/* Put social */}
-            {/* <ItemH
-                flex="initial"
-                padding="10px"
-                radius="0px 12px 0px 0px"
-                bg={theme.leftBarSocialBg}
-              >
-                <Anchor
-                title="Open Twitter"
-                href="https://twitter.com/epnsproject"
-                target="_blank"
-                bg={theme.leftBarSocialIconBg}
-                radius="4px"
-                padding="10px"
-                margin="5px"
-                onMouseOver={({ target }) => target.style.color = theme.color}
-                onMouseOut={({target})=>target.style.color = "fff"}
-                >
-                  <FaTwitter size={15} color="fff" />
-                </Anchor>
-                <Anchor
-                  title="Open Telegram"
-                  href="https://t.me/epnsproject"
-                  target="_blank"
-                  bg={theme.leftBarSocialIconBg}
-                  radius="4px"
-                  padding="10px"
-                  margin="5px"
-                  onMouseOver={({ target }) => target.style.color = theme.color}
-                  onMouseOut={({target})=>target.style.color = "fff"}
-                >
-                  <FaTelegramPlane size={15} color="#fff"/>
-                </Anchor>
-                <Anchor
-                  title="Open Medium"
-                  href="https://medium.com/ethereum-push-notification-service"
-                  target="_blank"
-                  bg={theme.leftBarSocialIconBg}
-                  radius="4px"
-                  padding="10px"
-                  margin="5px"
-                  onMouseOver={({ target }) => target.style.color = theme.color}
-                  onMouseOut={({target})=>target.style.color = "fff"}
-                >
-                  <FaMedium size={15} color="#fff"/>
-                </Anchor>
-                <Anchor
-                  title="Open Discord"
-                  href="https://discord.gg/YVPB99F9W5"
-                  target="_blank"
-                  bg={theme.leftBarSocialIconBg}
-                  radius="4px"
-                  padding="10px"
-                  margin="5px"
-                  onMouseOver={({ target }) => target.style.color = theme.color}
-                  onMouseOut={({target})=>target.style.color = "fff"}
-                >
-                  <FaDiscord size={15} color="#fff"/>
-                </Anchor>
-                <Anchor
-                  title="Open Github"
-                  href="https://github.com/ethereum-push-notification-service"
-                  target="_blank"
-                  bg={theme.leftBarSocialIconBg}
-                  radius="4px"
-                  padding="10px"
-                  margin="5px"
-                  onMouseOver={({ target }) => target.style.color = theme.color}
-                  onMouseOut={({target})=>target.style.color = "fff"}
-                >
-                  <FaGithub size={15} color={"#fff"}/>
-                </Anchor>
-              </ItemH> */}
-          </Footer>
-        </>
-      )}
-    </Container>
+    //         {/* Put social */}
+    //         {/* <ItemH
+    //             flex="initial"
+    //             padding="10px"
+    //             radius="0px 12px 0px 0px"
+    //             bg={theme.leftBarSocialBg}
+    //           >
+    //             <Anchor
+    //             title="Open Twitter"
+    //             href="https://twitter.com/epnsproject"
+    //             target="_blank"
+    //             bg={theme.leftBarSocialIconBg}
+    //             radius="4px"
+    //             padding="10px"
+    //             margin="5px"
+    //             onMouseOver={({ target }) => target.style.color = theme.color}
+    //             onMouseOut={({target})=>target.style.color = "fff"}
+    //             >
+    //               <FaTwitter size={15} color="fff" />
+    //             </Anchor>
+    //             <Anchor
+    //               title="Open Telegram"
+    //               href="https://t.me/epnsproject"
+    //               target="_blank"
+    //               bg={theme.leftBarSocialIconBg}
+    //               radius="4px"
+    //               padding="10px"
+    //               margin="5px"
+    //               onMouseOver={({ target }) => target.style.color = theme.color}
+    //               onMouseOut={({target})=>target.style.color = "fff"}
+    //             >
+    //               <FaTelegramPlane size={15} color="#fff"/>
+    //             </Anchor>
+    //             <Anchor
+    //               title="Open Medium"
+    //               href="https://medium.com/ethereum-push-notification-service"
+    //               target="_blank"
+    //               bg={theme.leftBarSocialIconBg}
+    //               radius="4px"
+    //               padding="10px"
+    //               margin="5px"
+    //               onMouseOver={({ target }) => target.style.color = theme.color}
+    //               onMouseOut={({target})=>target.style.color = "fff"}
+    //             >
+    //               <FaMedium size={15} color="#fff"/>
+    //             </Anchor>
+    //             <Anchor
+    //               title="Open Discord"
+    //               href="https://discord.gg/YVPB99F9W5"
+    //               target="_blank"
+    //               bg={theme.leftBarSocialIconBg}
+    //               radius="4px"
+    //               padding="10px"
+    //               margin="5px"
+    //               onMouseOver={({ target }) => target.style.color = theme.color}
+    //               onMouseOut={({target})=>target.style.color = "fff"}
+    //             >
+    //               <FaDiscord size={15} color="#fff"/>
+    //             </Anchor>
+    //             <Anchor
+    //               title="Open Github"
+    //               href="https://github.com/ethereum-push-notification-service"
+    //               target="_blank"
+    //               bg={theme.leftBarSocialIconBg}
+    //               radius="4px"
+    //               padding="10px"
+    //               margin="5px"
+    //               onMouseOver={({ target }) => target.style.color = theme.color}
+    //               onMouseOut={({target})=>target.style.color = "fff"}
+    //             >
+    //               <FaGithub size={15} color={"#fff"}/>
+    //             </Anchor>
+    //           </ItemH> */}
+    //       </Footer>
+    //     </>
+    //   )}
+    // </Container>
+    <></>
   );
 }
 

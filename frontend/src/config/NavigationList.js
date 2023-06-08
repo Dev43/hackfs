@@ -7,57 +7,57 @@ import { themeDark, themeLight } from 'config/Themization';
 
 const NavigationList = {
   primary: {
-    inbox: {
-      src: 'navigation/inboxOffIcon.svg',
-      activeSrc: 'navigation/inboxOnIcon.svg',
-      iconFactory: null,
-      name: 'Inbox',
-      title: 'Inbox',
-      alt: 'Open Inbox',
-      href: '/inbox',
-      newTab: false,
-      isRoute: true,
-      hasMenuLogic: true,
-      loading: false,
-      hidden: false,
-      headerTag: {
-        title: 'Inbox',
-        light: {
-          bg: GLOBALS.COLORS.GRADIENT_PRIMARY,
-          fg: themeLight.headerTagFg,
-        },
-        dark: {
-          bg: themeDark.headerTagBg,
-          fg: themeDark.headerTagFg,
-        },
-      },
-    },
-    channels: {
-      src: 'navigation/channelsOffIcon.svg',
-      activeSrc: 'navigation/channelsOnIcon.svg',
-      iconFactory: null,
-      name: 'Channels',
-      title: 'Browse Channels',
-      alt: 'Open Channels',
-      href: '/channels',
-      newTab: false,
-      isRoute: true,
-      hasMenuLogic: true,
-      opened: true,
-      loading: false,
-      hidden: false,
-      headerTag: {
-        title: 'View Channels',
-        light: {
-          bg: GLOBALS.COLORS.GRADIENT_SECONDARY,
-          fg: themeLight.headerTagFg,
-        },
-        dark: {
-          bg: themeDark.headerTagBg,
-          fg: themeDark.headerTagFg,
-        },
-      },
-    },
+    // inbox: {
+    //   src: 'navigation/inboxOffIcon.svg',
+    //   activeSrc: 'navigation/inboxOnIcon.svg',
+    //   iconFactory: null,
+    //   name: 'Inbox',
+    //   title: 'Inbox',
+    //   alt: 'Open Inbox',
+    //   href: '/inbox',
+    //   newTab: false,
+    //   isRoute: true,
+    //   hasMenuLogic: true,
+    //   loading: false,
+    //   hidden: false,
+    //   headerTag: {
+    //     title: 'Inbox',
+    //     light: {
+    //       bg: GLOBALS.COLORS.GRADIENT_PRIMARY,
+    //       fg: themeLight.headerTagFg,
+    //     },
+    //     dark: {
+    //       bg: themeDark.headerTagBg,
+    //       fg: themeDark.headerTagFg,
+    //     },
+    //   },
+    // },
+    // channels: {
+    //   src: 'navigation/channelsOffIcon.svg',
+    //   activeSrc: 'navigation/channelsOnIcon.svg',
+    //   iconFactory: null,
+    //   name: 'Channels',
+    //   title: 'Browse Channels',
+    //   alt: 'Open Channels',
+    //   href: '/channels',
+    //   newTab: false,
+    //   isRoute: true,
+    //   hasMenuLogic: true,
+    //   opened: true,
+    //   loading: false,
+    //   hidden: false,
+    //   headerTag: {
+    //     title: 'View Channels',
+    //     light: {
+    //       bg: GLOBALS.COLORS.GRADIENT_SECONDARY,
+    //       fg: themeLight.headerTagFg,
+    //     },
+    //     dark: {
+    //       bg: themeDark.headerTagBg,
+    //       fg: themeDark.headerTagFg,
+    //     },
+    //   },
+    // },
     chat: {
       src: 'navigation/chatOffIcon.svg',
       activeSrc: 'navigation/chatOnIcon.svg',
@@ -378,10 +378,10 @@ const NavigationList = {
 
 // // remove secret feature
 // if (
-  // window.location.hostname == 'app.epns.io' ||
-  // window.location.hostname == 'staging.epns.io' ||
-  // window.location.hostname == 'app.push.org' ||
-  // window.location.hostname == 'staging.push.org'
+// window.location.hostname == 'app.epns.io' ||
+// window.location.hostname == 'staging.epns.io' ||
+// window.location.hostname == 'app.push.org' ||
+// window.location.hostname == 'staging.push.org'
 // ) {
 //   delete NavigationList.primary.chat;
 // }

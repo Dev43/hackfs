@@ -77,7 +77,7 @@ export default function App() {
   }, [activatingConnector, connector]);
 
   useEffect(() => {
-    if(!account) return;
+    if (!account) return;
     dispatch(resetSpamSlice());
     dispatch(resetNotificationsSlice());
     dispatch(resetCanSendSlice());
@@ -101,7 +101,7 @@ export default function App() {
 
   // enable socket notifications
   useSDKSocket({ account, chainId, env: appConfig.appEnv });
-  
+
   const toggleDarkMode = () => {
     setDarkMode(!darkMode);
   };
@@ -123,17 +123,17 @@ export default function App() {
 
   React.useEffect(() => {
     window?.Olvy?.init({
-      organisation: "epns",
-      target: "#olvy-target",
-      type: "sidebar",
+      organisation: 'epns',
+      target: '#olvy-target',
+      type: 'sidebar',
       view: {
         showSearch: false,
         compact: false,
         showHeader: true, // only applies when widget type is embed. you cannot hide header for modal and sidebar widgets
         showUnreadIndicator: true,
-        unreadIndicatorColor: "#cc1919",
-        unreadIndicatorPosition: "top-right"
-      }
+        unreadIndicatorColor: '#cc1919',
+        unreadIndicatorPosition: 'top-right',
+      },
     });
     return function cleanup() {
       window?.Olvy?.teardown();
@@ -177,52 +177,56 @@ export default function App() {
           <InitState />
           <NavigationContextProvider>
             <AppContextProvider>
-            <Joyride
-              run={run}
-              steps={steps}
-              continuous={tutorialContinous}
-              stepIndex={stepIndex}
-              // hideFooter={true}
-              // primaryProps={false}
-              hideBackButton={true}
-              hideCloseButton={false}
-              disableScrolling={true}
-              disableScrollParentFix={true}
-              // disableFlip={true}
-              // showNextButton={false}
-              showSkipButton={false}
-              disableOverlayClose={true}
-              callback={handleJoyrideCallback}
-              styles={{
-                options: {
-                  arrowColor: darkMode ? themeDark.dynamicTutsBg : themeLight.dynamicTutsBg,
-                  backgroundColor: darkMode ? themeDark.dynamicTutsBg : themeLight.dynamicTutsBg,
-                  overlayColor: darkMode ? themeDark.dynamicTutsBgOverlay : themeLight.dynamicTutsBgOverlay,
-                  primaryColor: darkMode ? themeDark.dynamicTutsPrimaryColor : themeLight.dynamicTutsPrimaryColor,
-                  textColor: darkMode ? themeDark.dynamicTutsFontColor : themeLight.dynamicTutsFontColor,
-                  zIndex: 1000,
-                },
-              }}
-            />
+              <Joyride
+                run={run}
+                steps={steps}
+                continuous={tutorialContinous}
+                stepIndex={stepIndex}
+                // hideFooter={true}
+                // primaryProps={false}
+                hideBackButton={true}
+                hideCloseButton={false}
+                disableScrolling={true}
+                disableScrollParentFix={true}
+                // disableFlip={true}
+                // showNextButton={false}
+                showSkipButton={false}
+                disableOverlayClose={true}
+                callback={handleJoyrideCallback}
+                styles={{
+                  options: {
+                    arrowColor: darkMode ? themeDark.dynamicTutsBg : themeLight.dynamicTutsBg,
+                    backgroundColor: darkMode ? themeDark.dynamicTutsBg : themeLight.dynamicTutsBg,
+                    overlayColor: darkMode ? themeDark.dynamicTutsBgOverlay : themeLight.dynamicTutsBgOverlay,
+                    primaryColor: darkMode ? themeDark.dynamicTutsPrimaryColor : themeLight.dynamicTutsPrimaryColor,
+                    textColor: darkMode ? themeDark.dynamicTutsFontColor : themeLight.dynamicTutsFontColor,
+                    zIndex: 1000,
+                  },
+                }}
+              />
 
-            <HeaderContainer>
-              <Header isDarkMode={darkMode} darkModeToggle={toggleDarkMode} />
-            </HeaderContainer>
+              <HeaderContainer>
+                <Header
+                  isDarkMode={darkMode}
+                  darkModeToggle={toggleDarkMode}
+                />
+              </HeaderContainer>
 
-            <ParentContainer
-              bg={darkMode ? themeDark.backgroundBG : !active ? themeLight.connectWalletBg : themeLight.backgroundBG}
-              headerHeight={GLOBALS.CONSTANTS.HEADER_HEIGHT}>
-              <LeftBarContainer leftBarWidth={GLOBALS.CONSTANTS.LEFT_BAR_WIDTH}>
+              <ParentContainer
+                bg={darkMode ? themeDark.backgroundBG : !active ? themeLight.connectWalletBg : themeLight.backgroundBG}
+                headerHeight={GLOBALS.CONSTANTS.HEADER_HEIGHT}
+              >
+                {/* <LeftBarContainer leftBarWidth={GLOBALS.CONSTANTS.LEFT_BAR_WIDTH}>
                 <Navigation />
-              </LeftBarContainer>
+              </LeftBarContainer> */}
 
-              <ContentContainer leftBarWidth={GLOBALS.CONSTANTS.LEFT_BAR_WIDTH}>
-                <ChatUserContextProvider>
-                  {/* Shared among all pages, load universal things here */}
-                  <MasterInterfacePage />
-                </ChatUserContextProvider>
-              </ContentContainer>
-            </ParentContainer>
+                <ContentContainer leftBarWidth={0}>
+                  <ChatUserContextProvider>
+                    {/* Shared among all pages, load universal things here */}
+                    <MasterInterfacePage />
+                  </ChatUserContextProvider>
+                </ContentContainer>
+              </ParentContainer>
             </AppContextProvider>
           </NavigationContextProvider>
         </>

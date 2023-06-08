@@ -67,23 +67,37 @@ function MasterInterfacePage() {
   return (
     <Container>
       <Interface location={location.pathname}>
-        <Suspense fallback={
+        <Suspense
+          fallback={
             <ItemVV2>
-              <LoaderSpinner type={LOADER_TYPE.SEAMLESS} spinnerSize={24} />
+              <LoaderSpinner
+                type={LOADER_TYPE.SEAMLESS}
+                spinnerSize={24}
+              />
             </ItemVV2>
           }
         >
           <Routes>
-            <Route path="inbox" element={<InboxPage />} />
-            <Route path="chat/:chatid" element={<ChatPage />} />
-            <Route path="chat" element={<ChatPage />} />
+            {/* <Route path="inbox" element={<InboxPage />} /> */}
+            <Route
+              path="chat/:chatid"
+              element={<ChatPage />}
+            />
+            <Route
+              path="chat"
+              element={<ChatPage />}
+            />
+            <Route
+              path="/"
+              element={<Navigate to="/chat" />}
+            />
             {/* <Route path="chat-new" element={<NewChatPage />} /> */}
 
-            <Route
+            {/* <Route
               path="channels"
               element={<ChannelsPage loadTeaser={setLoadTeaserVideo} playTeaser={setPlayTeaserVideo} />}
-            />
-            <Route path="dashboard" element={<ChannelDashboardPage />} />
+            /> */}
+            {/* <Route path="dashboard" element={<ChannelDashboardPage />} />
             <Route path="send" element={<SendNotifsPage />} />
             <Route path="spam" element={<SpamPage />} />
             <Route path="receive" element={<ReceiveNotifsPage />} />
@@ -99,7 +113,7 @@ function MasterInterfacePage() {
             <Route path="faq" element={<FAQPage />} />
             <Route path="internal" element={<InternalDevPage />} />
             <Route path="/" element={<Navigate to="/channels" />} />
-            <Route path="support" element={<SupportPage />} />
+            <Route path="support" element={<SupportPage />} /> */}
           </Routes>
         </Suspense>
       </Interface>
@@ -124,7 +138,8 @@ function MasterInterfacePage() {
             onClick={(e) => {
               e.preventDefault();
               setPlayTeaserVideo(!playTeaserVideo);
-            }}>
+            }}
+          >
             <PreviewContent className="contentBox">
               <PreviewClose
                 href="#"
@@ -134,8 +149,12 @@ function MasterInterfacePage() {
                 onClick={(e) => {
                   e.preventDefault();
                   setPlayTeaserVideo(!playTeaserVideo);
-                }}>
-                <VscClose size={40} color="#fff" />
+                }}
+              >
+                <VscClose
+                  size={40}
+                  color="#fff"
+                />
               </PreviewClose>
               <Preview>
                 <div className="videoWrapper">
@@ -143,7 +162,8 @@ function MasterInterfacePage() {
                     src={loadTeaserVideo}
                     frameborder="0"
                     allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
-                    allowfullscreen></iframe>
+                    allowfullscreen
+                  ></iframe>
                 </div>
               </Preview>
             </PreviewContent>
