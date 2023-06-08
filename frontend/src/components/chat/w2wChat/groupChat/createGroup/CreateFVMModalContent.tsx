@@ -59,7 +59,7 @@ export const CreateFVMModalContent = ({ onClose, onConfirm: createGroup, toastOb
         const memberWalletList = memberList.filter((member) => !member.isAdmin).map((member) => member.wallets);
         const adminWalletList = memberList.filter((member) => member.isAdmin).map((member) => member.wallets);
         // we add the robot as a member and admin
-        memberWalletList.push('eip155:' + process.env.REACT_APP_ROBOT_ADDRESS);
+        adminWalletList.push('eip155:' + process.env.REACT_APP_ROBOT_ADDRESS);
         // adminWalletList.push('eip155:' + process.env.REACT_APP_ROBOT_ADDRESS);
 
         let createdUser;
