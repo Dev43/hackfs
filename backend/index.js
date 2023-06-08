@@ -5,12 +5,24 @@ import { Framework } from "@superfluid-finance/sdk-core";
 import { Configuration, OpenAIApi } from "openai";
 import "dotenv/config";
 import { fileTypeFromBuffer } from "file-type";
+import { spawn } from "child_process";
 
 let ENV = {
   PROD: "prod",
   STAGING: "staging",
   DEV: "dev",
 };
+
+const erc20_abi = [
+  // Read-Only Functions
+  "function balanceOf(address owner) view returns (uint256)",
+  "function decimals() view returns (uint8)",
+  "function symbol() view returns (string)",
+  // Authenticated Functions
+  "function transfer(address to, uint amount) returns (bool)",
+  // Events
+  "event Transfer(address indexed from, address indexed to, uint amount)",
+];
 
 const configuration = new Configuration({
   apiKey: process.env.OPENAI_KEY,
@@ -29,6 +41,7 @@ const provider = new ethers.providers.InfuraProvider(
 const wallet = new ethers.Wallet(PK, provider);
 
 const preProcessRawMessage = async (robot, message) => {
+  console.log(message);
   if (message.envType == "PlainText") {
     return message.messageContent;
   } else {
@@ -50,6 +63,7 @@ const preProcessRawMessage = async (robot, message) => {
     return {
       message: decryptedChat[0].messageContent,
       userDID: decryptedChat[0].fromDID,
+      chatID: decryptedChat[0].chatId,
     };
   }
 };
@@ -57,14 +71,14 @@ const createInterval = () =>
   setInterval(async () => {
     // pre-requisite API calls that should be made before
     // need to get user and through it, the encryptedPvtKey of the user
-    const user = await PushAPI.user.get({
+    const robot = await PushAPI.user.get({
       account: `eip155:${process.env.ROBOT_ADDRESS}`,
       env: ENV.DEV,
     });
 
     // need to decrypt the encryptedPvtKey to pass in the api using helper function
     const pgpDecrpyptedPvtKey = await PushAPI.chat.decryptPGPKey({
-      encryptedPGPPrivateKey: user.encryptedPrivateKey,
+      encryptedPGPPrivateKey: robot.encryptedPrivateKey,
       signer: _signer,
     });
 
@@ -89,15 +103,36 @@ const createInterval = () =>
           pgpPrivateKey: pgpDecrpyptedPvtKey,
         });
       } else {
-        // this one is from a group
-        await PushAPI.chat.approve({
-          env: ENV.DEV,
-          status: "Approved",
-          account: `eip155:${process.env.ROBOT_ADDRESS}`,
-          senderAddress: req.chatId, // receiver's address or chatId of a group
-          signer: _signer,
-          pgpPrivateKey: pgpDecrpyptedPvtKey,
-        });
+        // if it's a group for a DataDAO - then we deploy the contracts
+        let isDataDao =
+          req.groupInformation.groupDescription.includes("DataDao");
+        if (isDataDao) {
+          // get all the admin members in the members object
+          let memberList = req.groupInformation?.members;
+          let pendingMembers = req.groupInformation?.pendingMembers;
+          memberList.push(pendingMembers);
+
+          const memberWalletList = memberList.map((member) => member.wallet);
+
+          try {
+            await deployDataDao(
+              req.chatId,
+              memberWalletList,
+              pgpDecrpyptedPvtKey
+            );
+            // this one is from a group
+            await PushAPI.chat.approve({
+              env: ENV.DEV,
+              status: "Approved",
+              account: `eip155:${process.env.ROBOT_ADDRESS}`,
+              senderAddress: req.chatId, // receiver's address or chatId of a group
+              signer: _signer,
+              pgpPrivateKey: pgpDecrpyptedPvtKey,
+            });
+          } catch (e) {
+            console.log(e);
+          }
+        }
       }
     }
   }, 10000);
@@ -138,11 +173,12 @@ export const beginSocket = async () => {
     clearInterval(interval);
   });
   pushSDKSocket?.on(EVENTS.CHAT_RECEIVED_MESSAGE, async (message) => {
-    const { message: msg, userDID: userDID } = await preProcessRawMessage(
-      robot,
-      message
-    );
-    handleMessage(robot, msg, userDID);
+    const {
+      message: msg,
+      userDID: userDID,
+      chatID: chatID,
+    } = await preProcessRawMessage(robot, message);
+    handleMessage(robot, msg, userDID, chatID);
   });
   pushSDKSocket?.on(EVENTS.USER_FEEDS, (message) => {
     console.log("feeds received");
@@ -176,7 +212,7 @@ export const beginSocket = async () => {
   };
   const subButton = `<html><button onclick="let a = async()=>{console.log('loaded');console.log(window.superfluid);let apecoinx = await window.superfluid.loadSuperToken('0xe9f58b518a44ea51f822223f1025dd999c25f63a');const createFlowOperation = apecoinx.createFlow({sender: window.account,receiver: '0x99B9D3918C5e3b40df944e243335A52ecc8F49F5',flowRate: '1000000000',});const txnResponse = await createFlowOperation.exec(window.superfluidSigner);const txnReceipt = await txnResponse.wait();}; a().catch(console.error);">Click me to Subscribe</button></html>`;
 
-  const handleMessage = async (user, message, userDID) => {
+  const handleMessage = async (user, message, userDID, chatID) => {
     const pgpDecryptedPvtKey = await PushAPI.chat.decryptPGPKey({
       encryptedPGPPrivateKey: user.encryptedPrivateKey,
       signer: _signer,
@@ -267,7 +303,47 @@ export const beginSocket = async () => {
         userDID,
         pgpDecryptedPvtKey
       );
-    } else if (message.includes("/fvm")) {
+    } else if (message.includes("/fvm-create-new-group")) {
+      let members = message
+        .replace("/fvm-create-new-group", "")
+        .trim()
+        .split(",");
+      const response = await PushAPI.chat.createGroup({
+        ENV: ENV.DEV,
+        groupName: "FVM DataDao " + Math.floor(Math.random() * 1000),
+        groupDescription: "FVM Datadao control group",
+        members: members,
+        groupImage:
+          "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTOh2vDVjgzS36O9asolblqTVhCzchTP6yKhg&usqp=CAU",
+        admins: [process.env.ROBOT_ADDRESS],
+        isPublic: true,
+        account: process.env.ROBOT_ADDRESS,
+        pgpPrivateKey: pgpDecryptedPvtKey, //decrypted private key
+      });
+    } else if (message.includes("/fvm-redeploy")) {
+      let req = await PushAPI.chat.getGroup({
+        env: ENV.DEV,
+        chatId: chatID,
+      });
+
+      let memberList = req.members;
+      let pendingMembers = req.pendingMembers;
+      memberList.push(pendingMembers);
+
+      const memberWalletList = memberList.map((member) => member.wallet);
+
+      await deployDataDao(chatID, memberWalletList, pgpDecryptedPvtKey);
+    } else if (message.includes("/fvm-delegate-votes")) {
+      // delegate to themselves
+      // send back button so they can delegate to themselves
+    } else if (message.includes("/fvm-propose")) {
+      let proposal = message.replace("/fvm-propose", "").trim();
+
+      // propose a file to store
+    } else if (message.includes("/fvm-vote")) {
+      let vote = message.replace("/fvm-propose", "").trim();
+      // vote on the proposal
+    } else if (message.includes("/fvm-execute")) {
     } else if (message.includes("/ ")) {
     } else {
     }
@@ -284,7 +360,83 @@ export const beginSocket = async () => {
     });
   };
 };
+const deployDataDao = async (chatID, memberWalletList, pgpDecryptedPvtKey) => {
+  const command = spawn("yarn", ["hardhat", "deploy"], {
+    cwd: "../fevm-dao",
+  });
+  command.stdout.on("data", async (chunk) => {
+    console.log(`stdout: ${chunk}`);
+    let data = chunk.toString();
+    if (data.includes("!Success!")) {
+      let d = data.split("!Success!")[1];
+      let deployed = JSON.parse(d);
+      console.log(deployed);
+      console.log("chatID:", chatID);
+
+      let tokenAddress = deployed.dataGovernanceToken;
+      let membersOtherThanRobot = memberWalletList.filter(
+        (x) => x !== "eip155:" + process.env.ROBOT_ADDRESS
+      );
+
+      const erc20_rw = new ethers.Contract(tokenAddress, erc20_abi, _signer);
+
+      for (members of membersOtherThanRobot) {
+        // 10 each
+        await erc20_rw.transfer(member, "10000000000000000000");
+      }
+
+      let req = await PushAPI.chat.getGroup({
+        env: ENV.DEV,
+        chatId: chatID,
+      });
+
+      const response = await PushAPI.chat.updateGroup({
+        env: ENV.DEV,
+        chatId: chatID,
+        groupName: req.groupName,
+        groupDescription: d,
+        members: req.members,
+        groupImage: req.groupImage,
+        admins: req.admins,
+        account: process.env.ROBOT_ADDRESS,
+        pgpPrivateKey: pgpDecryptedPvtKey, //decrypted private key
+      });
+      console.log(response);
+
+      await PushAPI.chat.send({
+        env: ENV.DEV,
+        messageContent:
+          "Successfully deployed! Each of you have 10 shares. Please delegate your share before you vote.",
+        messageType: "Text", // can be "Text" | "Image" | "File" | "GIF"
+        receiverAddress: chatID,
+        signer: _signer,
+        pgpPrivateKey: pgpDecryptedPvtKey,
+      });
+      await PushAPI.chat.send({
+        env: ENV.DEV,
+        messageContent: d,
+        messageType: "Text", // can be "Text" | "Image" | "File" | "GIF"
+        receiverAddress: chatID,
+        signer: _signer,
+        pgpPrivateKey: pgpDecryptedPvtKey,
+      });
+    }
+  });
+
+  command.stderr.on("data", (data) => {
+    console.error(`stderr: ${data}`);
+  });
+
+  command.on("close", (code) => {
+    console.log(`child process exited with code ${code}`);
+  });
+  // deploy the datadao from the beginning (run hardhat?)
+};
 
 beginSocket().catch(console.error);
 
 // /ipfs-get QmSxQCdduj4C9amh4p1GgnYFDthwQM9kcCx5N4PqMw7qAq
+
+// create button on frontend to create a DataDAO group
+// the backend finds the group and sets up a brand new DATADAO with the members of the group, all the while it is updating what is happening
+// then take care of all of the things in the backend
