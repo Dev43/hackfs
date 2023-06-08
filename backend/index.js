@@ -24,8 +24,6 @@ const erc20_abi = [
   "event Transfer(address indexed from, address indexed to, uint amount)",
 ];
 
-const currentlyDeploying = {};
-
 const configuration = new Configuration({
   apiKey: process.env.OPENAI_KEY,
 });
@@ -356,10 +354,7 @@ const deployDataDao = async (chatID, pgpDecryptedPvtKey) => {
   });
   command.stdout.on("data", async (chunk) => {
     console.log(`stdout: ${chunk}`);
-    if (currentlyDeploying[chatID]) {
-      return;
-    }
-    currentlyDeploying[chatID] = true;
+
     let data = chunk.toString();
 
     if (data.includes("!Success!")) {
@@ -412,7 +407,6 @@ const deployDataDao = async (chatID, pgpDecryptedPvtKey) => {
         signer: _signer,
         pgpPrivateKey: pgpDecryptedPvtKey,
       });
-      currentlyDeploying[chatID] = false;
     }
   });
 

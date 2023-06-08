@@ -21,7 +21,6 @@ module.exports = async ({ deployments }) => {
     const transferOwnerTx = await dealDaoClientContract.transferOwnership(timeLock.address)
     await transferOwnerTx.wait()
     console.log("Ownership transferred")
-
     const governor = await get("GovernorContract")
     const daoDeal = await get("DaoDealClient")
     const dataGovernanceToken = await get("DataGovernanceToken")
