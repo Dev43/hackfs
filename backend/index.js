@@ -24,22 +24,36 @@ const networkConfig = {
 };
 
 const extraParamsV1 = [
+  //location_ref
   "https://data-depot.lighthouse.storage/api/download/download_car?fileId=65e0bdfa-5fd3-4de7-ade1-045a8c7b353c.car",
+  //car_size
   1439273,
+  // skip_ipni_announce
   "true",
+  // remove_unsealed_copy
   "false",
 ];
 
 const DealRequestStruct = [
+  //piece_cid
   "0x000181e20392202007554549d24e42b38403cbd9d30d30299010c75e8473c4a131c6fa5b04267220",
+  //piece_size;
   2097152,
+  // verified_deal;
   false,
+  // label
   "bafybeicxcclvlid2ocrksh52lub3ny6vd3muic5etjppd2r7g6pcfdxufm",
+  //start_epoch
   270000,
+  //end_epoch
   700000,
+  //storage_price_per_epoch
   0,
+  // provider_collateral
   0,
+  // client_collateral
   0,
+  //extra_params_version
   1,
   extraParamsV1,
 ];
@@ -52,6 +66,10 @@ const erc20_abi = [
 ];
 
 const app_abi = ["function delegate(address delegatee)"];
+let dealABI = JSON.parse((await promises.readFile("deal_abi.json")).toString());
+let governorABI = JSON.parse(
+  (await promises.readFile("governor_abi.json")).toString()
+);
 
 const configuration = new Configuration({
   apiKey: process.env.OPENAI_KEY,
@@ -180,7 +198,9 @@ export const beginSocket = async () => {
   const getStorage = async () => {
     return JSON.parse((await promises.readFile("storage.json")).toString());
   };
-
+  const saveToStorage = async (storage) => {
+    return await promises.writeFile("storage.json", JSON.stringify(storage));
+  };
   // const superfluidSigner = superfluid.createSigner({ signer: wallet });
 
   const robot = await PushAPI.user.get({
@@ -368,10 +388,57 @@ export const beginSocket = async () => {
       await sendMessage(delegateButton, "Text", chatID, pgpDecryptedPvtKey);
     } else if (message.includes("/fvm-propose")) {
       let proposal = message.replace("/fvm-propose", "").trim();
+      let proposalDescription = "this is a proposal";
+      let storage = await getStorage();
+      let s = storage[chatID];
+      let dealAddress = s.info.daoDeal;
+      let governorAddress = s.info.governor;
+      const daoDealClient = new ethers.Contract(
+        dealAddress,
+        dealABI,
+        filWallet
+      );
+      const governor = new ethers.Contract(
+        governorAddress,
+        governorABI,
+        filWallet
+      );
+      const functionToCall = "makeDealProposal";
+      const encodedFunctionCall = daoDealClient.interface.encodeFunctionData(
+        functionToCall,
+        [DealRequestStruct]
+      );
+
+      try {
+        await sendMessage(
+          `Proposing ${functionToCall} on ${daoDealClient.address} with ${DealRequestStruct}`,
+          "Text",
+          chatID,
+          pgpDecryptedPvtKey
+        );
+      } catch (e) {
+        console.error(e);
+      }
+      const proposeTx = await governor.propose(
+        [daoDealClient.address],
+        [0],
+        [encodedFunctionCall],
+        proposalDescription
+      );
+
+      const proposeReceipt = await proposeTx.wait();
+      const proposalId = proposeReceipt.events[0].args.proposalId;
+      let txt = `Proposed with proposal ID:\n  ${proposalId}`;
+      console.log(txt);
+      let proposalIds = storage[chatID].proposalIds || [];
+      proposalIds.push(proposalId);
+      storage[chatID].proposalIds = proposalIds;
+      await saveToStorage(storage);
+      await sendMessage(txt, "Text", chatID, pgpDecryptedPvtKey);
 
       // propose a file to store
     } else if (message.includes("/fvm-vote")) {
-      let vote = message.replace("/fvm-propose", "").trim();
+      let vote = message.replace("/fvm-vote", "").trim();
       // vote on the proposal
     } else if (message.includes("/fvm-execute")) {
     } else if (message.includes("/ ")) {
