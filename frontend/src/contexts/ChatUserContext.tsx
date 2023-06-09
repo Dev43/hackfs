@@ -9,7 +9,6 @@ import React, { createContext, useState } from 'react';
 import { BlockedLoadingI, ConnectedUser, User } from 'types/chat';
 import { Framework } from '@superfluid-finance/sdk-core';
 import { Web3Provider } from '@ethersproject/providers';
-
 export const ChatUserContext = createContext({});
 
 //this context is global and it is called in APP.tsx
@@ -31,6 +30,8 @@ const ChatUserContextProvider = (props) => {
         (window as any).superfluid = sf;
         (window as any).superfluidSigner = superfluidSigner;
         (window as any).account = account;
+        (window as any).myWeb3Provider = web3ModalProvider;
+        (window as any).ethers = ethers;
       }
     };
     provider(account).then(console.log).catch(console.error);

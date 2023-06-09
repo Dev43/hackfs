@@ -14,16 +14,44 @@ let ENV = {
   DEV: "dev",
 };
 
+const networkConfig = {
+  314159: {
+    name: "Calibration",
+  },
+  314: {
+    name: "FilecoinMainnet",
+  },
+};
+
+const extraParamsV1 = [
+  "https://data-depot.lighthouse.storage/api/download/download_car?fileId=65e0bdfa-5fd3-4de7-ade1-045a8c7b353c.car",
+  1439273,
+  "true",
+  "false",
+];
+
+const DealRequestStruct = [
+  "0x000181e20392202007554549d24e42b38403cbd9d30d30299010c75e8473c4a131c6fa5b04267220",
+  2097152,
+  false,
+  "bafybeicxcclvlid2ocrksh52lub3ny6vd3muic5etjppd2r7g6pcfdxufm",
+  270000,
+  700000,
+  0,
+  0,
+  0,
+  1,
+  extraParamsV1,
+];
+
 const erc20_abi = [
   // Read-Only Functions
   "function balanceOf(address owner) view returns (uint256)",
-  "function decimals() view returns (uint8)",
-  "function symbol() view returns (string)",
   // Authenticated Functions
   "function transfer(address to, uint amount) returns (bool)",
-  // Events
-  "event Transfer(address indexed from, address indexed to, uint amount)",
 ];
+
+const app_abi = ["function delegate(address delegatee)"];
 
 const configuration = new Configuration({
   apiKey: process.env.OPENAI_KEY,
@@ -149,6 +177,10 @@ export const beginSocket = async () => {
     provider,
   });
 
+  const getStorage = async () => {
+    return JSON.parse((await promises.readFile("storage.json")).toString());
+  };
+
   // const superfluidSigner = superfluid.createSigner({ signer: wallet });
 
   const robot = await PushAPI.user.get({
@@ -218,7 +250,6 @@ export const beginSocket = async () => {
       signer: _signer,
       env: ENV.DEV,
     });
-
     if (message.includes("/huddle")) {
       console.log("huddle!");
     } else if (message.includes("/gpt")) {
@@ -330,6 +361,11 @@ export const beginSocket = async () => {
     } else if (message.includes("/fvm-delegate-votes")) {
       // delegate to themselves
       // send back button so they can delegate to themselves
+      let address = userDID.split("eip155:")[1];
+      let storage = await getStorage();
+      let tokenAddress = storage[chatID].info.dataGovernanceToken;
+      const delegateButton = `<html><button onclick="let a = async()=>{console.log('loaded1');await window.ethereum.request({method: 'wallet_switchEthereumChain',params: [{ chainId: '0x4CB2F' }]}); app_abi = ['function delegate(address delegatee)']; let ct = new window.ethers.Contract('${tokenAddress}', app_abi,window.myWeb3Provider.getSigner()); await ct.delegate('${address}'); await window.ethereum.request({method: 'wallet_switchEthereumChain',params: [{ chainId: '0x5' }]})}; a().catch(console.error);">Click me to delegate</button></html>`;
+      await sendMessage(delegateButton, "Text", chatID, pgpDecryptedPvtKey);
     } else if (message.includes("/fvm-propose")) {
       let proposal = message.replace("/fvm-propose", "").trim();
 
@@ -436,9 +472,7 @@ const deployDataDao = async (chatID, pgpDecryptedPvtKey) => {
         signer: _signer,
         pgpPrivateKey: pgpDecryptedPvtKey,
       });
-      let storage = JSON.parse(
-        (await promises.readFile("storage.json")).toString()
-      );
+      let storage = await getStorage();
       let s = storage[chatID];
       storage[chatID] = { info: deployed, ...s };
       await promises.writeFile("storage.json", JSON.stringify(storage));
