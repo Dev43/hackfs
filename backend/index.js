@@ -6,6 +6,7 @@ import { Configuration, OpenAIApi } from "openai";
 import "dotenv/config";
 import { fileTypeFromBuffer } from "file-type";
 import { spawn } from "child_process";
+import { promises } from "node:fs";
 
 let ENV = {
   PROD: "prod",
@@ -133,6 +134,11 @@ const createInterval = () =>
 
 // create the socket
 export const beginSocket = async () => {
+  try {
+    await promises.readFile("storage.json");
+  } catch (e) {
+    await promises.writeFile("storage.json", "{}");
+  }
   const { createHelia } = await import("helia");
   const { unixfs } = await import("@helia/unixfs");
   const helia = await createHelia();
@@ -349,13 +355,19 @@ export const beginSocket = async () => {
   };
 };
 const deployDataDao = async (chatID, pgpDecryptedPvtKey) => {
-  const command = spawn("yarn", ["hardhat", "deploy"], {
+  const command = spawn("yarn", ["hardhat", "--help"], {
     cwd: "../fevm-dao",
   });
   command.stdout.on("data", async (chunk) => {
     console.log(`stdout: ${chunk}`);
 
-    let data = chunk.toString();
+    // let data = chunk.toString();
+    let data = `!Success! {
+      "governor": "0xA0De26c07B3ad705A38440f88C1D52B9F646eB45",
+      "daoDeal": "0x2aab1F0C972BC74FEa44A59E60f663a1f75EbBE6",
+      "dataGovernanceToken": "0x933d750e6c8EebB57dfd1339359f07612319BCdB",
+      "timeLock": "0x2dD7b8d4D4b7Cf679487218405E4910709F04791"
+    }`;
 
     if (data.includes("!Success!")) {
       let d = data.split("!Success!")[1];
@@ -382,13 +394,13 @@ const deployDataDao = async (chatID, pgpDecryptedPvtKey) => {
 
       const erc20_rw = new ethers.Contract(tokenAddress, erc20_abi, filWallet);
 
-      for (const member of membersOtherThanRobot) {
-        // 10 each
-        console.log("sending tokens to ", member);
-        let address = member.split("eip155:")[1];
-        let tx = await erc20_rw.transfer(address, "10000000000000000000");
-        await tx.wait();
-      }
+      // for (const member of membersOtherThanRobot) {
+      //   // 10 each
+      //   console.log("sending tokens to ", member);
+      //   let address = member.split("eip155:")[1];
+      //   let tx = await erc20_rw.transfer(address, "10000000000000000000");
+      //   await tx.wait();
+      // }
 
       await PushAPI.chat.send({
         env: ENV.DEV,
@@ -407,6 +419,12 @@ const deployDataDao = async (chatID, pgpDecryptedPvtKey) => {
         signer: _signer,
         pgpPrivateKey: pgpDecryptedPvtKey,
       });
+      let storage = JSON.parse(
+        (await promises.readFile("storage.json")).toString()
+      );
+      let s = storage[chatID];
+      storage[chatID] = { info: deployed, ...s };
+      await promises.writeFile("storage.json", JSON.stringify(storage));
     }
   });
 
