@@ -430,15 +430,24 @@ export const beginSocket = async () => {
       const proposalId = proposeReceipt.events[0].args.proposalId;
       let txt = `Proposed with proposal ID:\n  ${proposalId}`;
       console.log(txt);
-      let proposalIds = storage[chatID].proposalIds || [];
-      proposalIds.push(proposalId);
-      storage[chatID].proposalIds = proposalIds;
+      let proposals = storage[chatID].proposals || {};
+      proposals[proposalId] = { hasVoted: {} };
+      storage[chatID].proposals = proposals;
       await saveToStorage(storage);
       await sendMessage(txt, "Text", chatID, pgpDecryptedPvtKey);
 
       // propose a file to store
     } else if (message.includes("/fvm-vote")) {
       let vote = message.replace("/fvm-vote", "").trim();
+
+      let storage = await getStorage();
+      let s = storage[chatID];
+      let proposalId =
+        "37164306427754712357855953660555925190108801972528315363076883024762551896192";
+      let governorAddress = s.info.governor;
+      let buttons = `<html><button onclick="let a = async()=>{console.log('loaded2');await window.ethereum.request({method: 'wallet_switchEthereumChain',params: [{ chainId: '0x4CB2F' }]}); app_abi = ['function castVoteWithReason(uint256 proposalId,uint8 support,string calldata reason)  returns (uint256)']; let ct = new window.ethers.Contract('${governorAddress}', app_abi,window.myWeb3Provider.getSigner()); await ct.castVoteWithReason('${proposalId}', 1, ''); await window.ethereum.request({method: 'wallet_switchEthereumChain',params: [{ chainId: '0x5' }]})}; a().catch(console.error);">Yes</button><button onclick="let a = async()=>{console.log('loaded2');await window.ethereum.request({method: 'wallet_switchEthereumChain',params: [{ chainId: '0x4CB2F' }]}); app_abi = ['function castVoteWithReason(uint256 proposalId,uint8 support,string calldata reason)  returns (uint256)']; let ct = new window.ethers.Contract('${governorAddress}', app_abi,window.myWeb3Provider.getSigner()); await ct.castVoteWithReason('${proposalId}', 0, ''); await window.ethereum.request({method: 'wallet_switchEthereumChain',params: [{ chainId: '0x5' }]})}; a().catch(console.error);">No</button><button onclick="let a = async()=>{console.log('loaded2');await window.ethereum.request({method: 'wallet_switchEthereumChain',params: [{ chainId: '0x4CB2F' }]}); app_abi = ['function castVoteWithReason(uint256 proposalId,uint8 support,string calldata reason)  returns (uint256)']; let ct = new window.ethers.Contract('${governorAddress}', app_abi,window.myWeb3Provider.getSigner()); await ct.castVoteWithReason('${proposalId}', 2, ''); await window.ethereum.request({method: 'wallet_switchEthereumChain',params: [{ chainId: '0x5' }]})}; a().catch(console.error);">Abstain</button></html>`;
+      // we need to send back 3 buttons, yes, no or abstain
+      await sendMessage(buttons, "Text", chatID, pgpDecryptedPvtKey);
       // vote on the proposal
     } else if (message.includes("/fvm-execute")) {
     } else if (message.includes("/ ")) {
