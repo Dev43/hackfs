@@ -4,9 +4,9 @@ import { AbstractConnector } from '@web3-react/abstract-connector';
 import { UnsupportedChainIdError, useWeb3React } from '@web3-react/core';
 import {
   NoEthereumProviderError,
-  UserRejectedRequestError as UserRejectedRequestErrorInjected
+  UserRejectedRequestError as UserRejectedRequestErrorInjected,
 } from '@web3-react/injected-connector';
-import { ethers } from "ethers";
+import { ethers } from 'ethers';
 import React, { useContext, useState } from 'react';
 
 // External Packages
@@ -25,7 +25,7 @@ import {
   ItemHV2,
   ItemVV2,
   SectionV2,
-  SpanV2
+  SpanV2,
 } from 'components/reusables/SharedStylingV2';
 import { injected, ledger, walletconnect } from 'connectors';
 import { useDeviceWidthCheck, useEagerConnect, useInactiveListener } from 'hooks';
@@ -62,11 +62,13 @@ const web3Connectors = {
   Ledger: { obj: ledger, logolight: LedgerLogoLight, logodark: LedgerLogoDark, title: 'Ledger' },
 };
 
-
-
 async function handleChangeNetwork() {
   const chainIds = appConfig.allowedNetworks;
+  let chainId = window.ethereum.networkVersion;
   if (!chainIds.includes(window.ethereum.networkVersion)) {
+    if (chainId == 314159) {
+      return;
+    }
     try {
       await window.ethereum.request({
         method: 'wallet_switchEthereumChain',
@@ -106,8 +108,10 @@ const AppLogin = ({ toggleDarkMode }) => {
   const [activatingConnector, setActivatingConnector] = React.useState<AbstractConnector>();
 
   const isMobile = useDeviceWidthCheck(600);
-  const web3ConnectorsObj:Object = isMobile?swapPropertyOrder(web3Connectors,'Injected','WalletConnect'):web3Connectors;
-  
+  const web3ConnectorsObj: Object = isMobile
+    ? swapPropertyOrder(web3Connectors, 'Injected', 'WalletConnect')
+    : web3Connectors;
+
   React.useEffect(() => {
     if (activatingConnector && activatingConnector === connector) {
       setActivatingConnector(undefined);
@@ -124,9 +128,20 @@ const AppLogin = ({ toggleDarkMode }) => {
   return (
     <Container alignItems="center">
       <BlurBGClouds />
-      <ItemHV2 flexWrap="nowrap" maxWidth="fit-content" alignSelf="flex-end" flex="initial">
+      <ItemHV2
+        flexWrap="nowrap"
+        maxWidth="fit-content"
+        alignSelf="flex-end"
+        flex="initial"
+      >
         {!!error && (
-          <SpanV2 padding="0.4rem 1rem" margin="0 1rem" borderRadius="20px" background="#CF1C84" color="#fff">
+          <SpanV2
+            padding="0.4rem 1rem"
+            margin="0 1rem"
+            borderRadius="20px"
+            background="#CF1C84"
+            color="#fff"
+          >
             {getErrorMessage(error)}
           </SpanV2>
         )}
@@ -137,7 +152,8 @@ const AppLogin = ({ toggleDarkMode }) => {
           borderRadius="100%"
           alignSelf="center"
           background="rgba(179, 178, 236, 0.5)"
-          zIndex="99">
+          zIndex="99"
+        >
           <DarkModeSwitch
             style={{ margin: '0 1rem' }}
             checked={theme.scheme == 'light' ? false : true}
@@ -148,13 +164,18 @@ const AppLogin = ({ toggleDarkMode }) => {
         </ItemHV2>
       </ItemHV2>
       {/* Login Module */}
-      <ItemVV2 alignSelf="center" justifyContent="flex-start" flex="auto">
+      <ItemVV2
+        alignSelf="center"
+        justifyContent="flex-start"
+        flex="auto"
+      >
         {/* Logo */}
         <ItemVV2
           width="200px"
           margin={`${GLOBALS.ADJUSTMENTS.MARGIN.VERTICAL} ${GLOBALS.ADJUSTMENTS.MARGIN.HORIZONTAL}`}
           alignSelf="center"
-          flex="initial">
+          flex="initial"
+        >
           {theme.scheme == 'light' && <PushLogoLight />}
           {theme.scheme == 'dark' && <PushLogoDark />}
         </ItemVV2>
@@ -167,17 +188,23 @@ const AppLogin = ({ toggleDarkMode }) => {
           borderRadius={GLOBALS.ADJUSTMENTS.RADIUS.LARGE}
           alignSelf="center"
           flex="initial"
-          shadow="0px 0px 9px rgba(18, 8, 46, 0.04)">
+          shadow="0px 0px 9px rgba(18, 8, 46, 0.04)"
+        >
           <H2V2
             textTransform="none"
             color={theme.default.color}
             fontSize="32px"
             fontWeight="500"
-            margin={`${GLOBALS.ADJUSTMENTS.MARGIN.VERTICAL} 0`}>
+            margin={`${GLOBALS.ADJUSTMENTS.MARGIN.VERTICAL} 0`}
+          >
             Connect a Wallet
           </H2V2>
 
-          <ItemVV2 alignSelf="stretch" alignItems="flex-start" margin={`0 0 ${GLOBALS.ADJUSTMENTS.MARGIN.VERTICAL} 0`}>
+          <ItemVV2
+            alignSelf="stretch"
+            alignItems="flex-start"
+            margin={`0 0 ${GLOBALS.ADJUSTMENTS.MARGIN.VERTICAL} 0`}
+          >
             {Object.keys(web3ConnectorsObj).map((name) => {
               const currentConnector = web3Connectors[name].obj;
               const disabled = currentConnector === connector;
@@ -198,15 +225,22 @@ const AppLogin = ({ toggleDarkMode }) => {
                   onClick={() => {
                     setActivatingConnector(currentConnector);
                     activate(currentConnector);
-                  }}>
-                  <ImageV2 src={image} height="40px" width="50px" padding="5px" />
+                  }}
+                >
+                  <ImageV2
+                    src={image}
+                    height="40px"
+                    width="50px"
+                    padding="5px"
+                  />
 
                   <SpanV2
                     padding="5px"
                     textTransform="Capitalize"
                     fontSize="18px"
                     fontWeight="500"
-                    color={theme.default.color}>
+                    color={theme.default.color}
+                  >
                     {title}
                   </SpanV2>
                 </LoginButton>
@@ -215,13 +249,24 @@ const AppLogin = ({ toggleDarkMode }) => {
           </ItemVV2>
 
           {/* TOS and PRIVACY */}
-          <SpanV2 fontSize="14px" padding="0px 20px 10px 20px" color={theme.default.color} lineHeight="140%">
+          <SpanV2
+            fontSize="14px"
+            padding="0px 20px 10px 20px"
+            color={theme.default.color}
+            lineHeight="140%"
+          >
             By connecting your wallet, <b>You agree</b> to our{' '}
-            <AInlineV2 href="https://epns.io/tos" target="_blank">
+            <AInlineV2
+              href="https://epns.io/tos"
+              target="_blank"
+            >
               Terms of Service
             </AInlineV2>{' '}
             and our{' '}
-            <AInlineV2 href="https://epns.io/privacy" target="_blank">
+            <AInlineV2
+              href="https://epns.io/privacy"
+              target="_blank"
+            >
               Privacy Policy
             </AInlineV2>
             .
@@ -229,22 +274,44 @@ const AppLogin = ({ toggleDarkMode }) => {
         </ItemVV2>
 
         {/* Chainsafe Audit and Discord */}
-        <ItemVV2 margin="30px 0 0 0" flex="initial" maxWidth="920px">
-          <SpanV2 fontSize="14px" padding="25px 15px" lineHeight="140%" color={theme.default.color}>
-            Note: The Push Protocol has been under development for 2+ years now. It has successfully completed its security audits of {' '}
-            <AInlineV2 href="https://github.com/ChainSafe/audits/blob/main/EPNS/epns-protocol-10-2021.pdf" target="_blank">
-              version 1 
+        <ItemVV2
+          margin="30px 0 0 0"
+          flex="initial"
+          maxWidth="920px"
+        >
+          <SpanV2
+            fontSize="14px"
+            padding="25px 15px"
+            lineHeight="140%"
+            color={theme.default.color}
+          >
+            Note: The Push Protocol has been under development for 2+ years now. It has successfully completed its
+            security audits of{' '}
+            <AInlineV2
+              href="https://github.com/ChainSafe/audits/blob/main/EPNS/epns-protocol-10-2021.pdf"
+              target="_blank"
+            >
+              version 1
             </AInlineV2>{' '}
-            and {' '}
-            <AInlineV2 href="https://github.com/ChainSafe/audits/blob/main/EPNS/epns-protocol-11-2022.pdf" target="_blank">
+            and{' '}
+            <AInlineV2
+              href="https://github.com/ChainSafe/audits/blob/main/EPNS/epns-protocol-11-2022.pdf"
+              target="_blank"
+            >
               version 1.5
             </AInlineV2>{' '}
-            smart contracts by Chainsafe. However, always DYOR and anticipate UI bugs or improvements. You can use our {' '}
-            <AInlineV2 href="https://zv9atndluia.typeform.com/to/KW3gwclM" target="_blank">
-              Bug Bounty Form 
+            smart contracts by Chainsafe. However, always DYOR and anticipate UI bugs or improvements. You can use our{' '}
+            <AInlineV2
+              href="https://zv9atndluia.typeform.com/to/KW3gwclM"
+              target="_blank"
+            >
+              Bug Bounty Form
             </AInlineV2>{' '}
-            to report bugs or communicate with us on our {' '}
-            <AInlineV2 href="https://discord.com/invite/pushprotocol" target="_blank">
+            to report bugs or communicate with us on our{' '}
+            <AInlineV2
+              href="https://discord.com/invite/pushprotocol"
+              target="_blank"
+            >
               Discord
             </AInlineV2>
             .
@@ -272,4 +339,4 @@ const Container = styled(SectionV2)`
 const LoginButton = styled(ButtonV2)`
   flex-direction: row;
   justify-content: flex-start;
-`
+`;

@@ -20,7 +20,7 @@ import { handleChangeNetwork } from 'helpers/ChainHelper';
 const ChainIndicator = ({ isDarkMode }) => {
   const toggleArrowRef = useRef(null);
   const dropdownRef = useRef(null);
-  const { error, account, library, chainId:currentChainId } = useWeb3React<ethers.providers.Web3Provider>();
+  const { error, account, library, chainId: currentChainId } = useWeb3React<ethers.providers.Web3Provider>();
   const theme = useTheme();
 
   const [showDropdown, setShowDropdown] = React.useState<boolean>(false);

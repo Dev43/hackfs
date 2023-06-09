@@ -12,6 +12,9 @@ export const handleChangeNetwork: (
 ) => Promise<void> = async (chainId, provider) => {
   const chainIds = appConfig?.allowedNetworks;
   if (chainIds.includes(chainId)) {
+    if (chainId == 314159) {
+      return;
+    }
     try {
       await provider.request({
         method: 'wallet_switchEthereumChain',
