@@ -16,11 +16,11 @@ module.exports = async ({ deployments }) => {
 
     //Transfer Ownership to TimeLock.sol
     //Comment this out after deploying the first time
-    console.log("Transferring DaoDealClient Owner to TimeLock.sol")
+    console.log("COMM: Transferring DaoDealClient Owner to TimeLock.sol")
     const dealDaoClientContract = await ethers.getContractAt("DaoDealClient", daoDealClient.address)
     const transferOwnerTx = await dealDaoClientContract.transferOwnership(timeLock.address)
     await transferOwnerTx.wait()
-    console.log("Ownership transferred")
+    console.log("COMM: Ownership transferred!")
     const governor = await get("GovernorContract")
     const daoDeal = await get("DaoDealClient")
     const dataGovernanceToken = await get("DataGovernanceToken")
