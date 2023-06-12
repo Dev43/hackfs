@@ -40,6 +40,12 @@ function getLibrary(provider) {
       if (newNetwork.chainId == 314159 || newNetwork.chainId == '314159') {
         return;
       }
+      if (
+        (oldNetwork.chainId == 314159 || oldNetwork.chainId == '314159') &&
+        (newNetwork.chainId == 5 || newNetwork.chainId == '5')
+      ) {
+        return;
+      }
       window.location.reload();
     }
   });
