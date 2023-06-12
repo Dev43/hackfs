@@ -8,21 +8,6 @@ import { fileTypeFromBuffer } from "file-type";
 import { exec, spawn } from "child_process";
 import { promises } from "node:fs";
 
-let ENV = {
-  PROD: "prod",
-  STAGING: "staging",
-  DEV: "dev",
-};
-
-const networkConfig = {
-  314159: {
-    name: "Calibration",
-  },
-  314: {
-    name: "FilecoinMainnet",
-  },
-};
-
 const erc20_abi = [
   // Read-Only Functions
   "function balanceOf(address owner) view returns (uint256)",
@@ -30,7 +15,6 @@ const erc20_abi = [
   "function transfer(address to, uint amount) returns (bool)",
 ];
 
-const app_abi = ["function delegate(address delegatee)"];
 let dealABI = JSON.parse((await promises.readFile("deal_abi.json")).toString());
 let governorABI = JSON.parse(
   (await promises.readFile("governor_abi.json")).toString()
@@ -50,7 +34,6 @@ const provider = new ethers.providers.InfuraProvider(
   "goerli",
   "cd9284d8201641c5a4cfe394661641e2"
 );
-const wallet = new ethers.Wallet(PK, provider);
 
 const filprovider = new ethers.providers.JsonRpcProvider(
   "https://api.calibration.node.glif.io/rpc/v1"
@@ -58,20 +41,19 @@ const filprovider = new ethers.providers.JsonRpcProvider(
 const filWallet = new ethers.Wallet(PK, filprovider);
 
 const preProcessRawMessage = async (robot, message) => {
-  console.log(message);
   if (message.envType == "PlainText") {
     return message.messageContent;
   } else {
     // need to decrypt the encryptedPvtKey to pass in the api using helper function
     const pgpDecryptedPvtKey = await PushAPI.chat.decryptPGPKey({
-      env: ENV.DEV,
+      env: process.env.ENV,
       encryptedPGPPrivateKey: robot.encryptedPrivateKey,
       signer: _signer,
     });
 
     // actual api
     const decryptedChat = await PushAPI.chat.decryptConversation({
-      env: ENV.DEV,
+      env: process.env.ENV,
       messages: [message], // array of message object fetched from chat.history method
       connectedUser: robot, // user meta data object fetched from chat.get method
       pgpPrivateKey: pgpDecryptedPvtKey, //decrypted private key
@@ -90,7 +72,7 @@ const createInterval = () =>
     // need to get user and through it, the encryptedPvtKey of the user
     const robot = await PushAPI.user.get({
       account: `eip155:${process.env.ROBOT_ADDRESS}`,
-      env: ENV.DEV,
+      env: process.env.ENV,
     });
 
     // need to decrypt the encryptedPvtKey to pass in the api using helper function
@@ -104,7 +86,7 @@ const createInterval = () =>
       account: `eip155:${process.env.ROBOT_ADDRESS}`,
       toDecrypt: true,
       pgpPrivateKey: pgpDecryptedPvtKey,
-      env: ENV.DEV,
+      env: process.env.ENV,
     });
     for (const req of requests) {
       console.log(req);
@@ -112,7 +94,7 @@ const createInterval = () =>
       // this one is from a user
       if (req.did) {
         await PushAPI.chat.approve({
-          env: ENV.DEV,
+          env: process.env.ENV,
           status: "Approved",
           account: `eip155:${process.env.ROBOT_ADDRESS}`,
           senderAddress: req.wallets, // receiver's address or chatId of a group
@@ -128,7 +110,7 @@ const createInterval = () =>
             await deployDataDao(req.chatId, pgpDecryptedPvtKey);
             // this one is from a group
             await PushAPI.chat.approve({
-              env: ENV.DEV,
+              env: process.env.ENV,
               status: "Approved",
               account: `eip155:${process.env.ROBOT_ADDRESS}`,
               senderAddress: req.chatId, // receiver's address or chatId of a group
@@ -170,11 +152,11 @@ export const beginSocket = async () => {
 
   const robot = await PushAPI.user.get({
     account: `eip155:${process.env.ROBOT_ADDRESS}`,
-    env: ENV.DEV,
+    env: process.env.ENV,
   });
   const pushSDKSocket = createSocketConnection({
     user: `eip155:${process.env.ROBOT_ADDRESS}`, // Not CAIP-10 format
-    env: ENV.DEV,
+    env: process.env.ENV,
     socketType: "chat",
     socketOptions: { autoConnect: true, reconnectionAttempts: 3 },
   });
@@ -233,7 +215,7 @@ export const beginSocket = async () => {
     const pgpDecryptedPvtKey = await PushAPI.chat.decryptPGPKey({
       encryptedPGPPrivateKey: user.encryptedPrivateKey,
       signer: _signer,
-      env: ENV.DEV,
+      env: process.env.ENV,
     });
     if (message.includes("/huddle")) {
       console.log("huddle!");
@@ -244,11 +226,16 @@ export const beginSocket = async () => {
         await sendMessage(
           "Please subscribe with some Apecoin",
           "Text",
-          chatID,
+          chatID || userDID,
           pgpDecryptedPvtKey
         );
 
-        await sendMessage(subButton, "Text", chatID, pgpDecryptedPvtKey);
+        await sendMessage(
+          subButton,
+          "Text",
+          chatID || userDID,
+          pgpDecryptedPvtKey
+        );
 
         return;
       }
@@ -263,7 +250,7 @@ export const beginSocket = async () => {
         aiMsg = completion.data.choices[0].message?.content || "";
       }
 
-      await sendMessage(aiMsg, "Text", chatID, pgpDecryptedPvtKey);
+      await sendMessage(aiMsg, "Text", chatID || userDID, pgpDecryptedPvtKey);
     } else if (message.includes("/subscribe")) {
       try {
         let message = "You have already subscribed!";
@@ -272,7 +259,12 @@ export const beginSocket = async () => {
           message = subButton;
         }
 
-        await sendMessage(message, "Text", chatID, pgpDecryptedPvtKey);
+        await sendMessage(
+          message,
+          "Text",
+          chatID || userDID,
+          pgpDecryptedPvtKey
+        );
       } catch (err) {
         console.error(err);
       }
@@ -299,7 +291,7 @@ export const beginSocket = async () => {
       await sendMessage(
         JSON.stringify(file),
         "File",
-        chatID,
+        chatID || userDID,
         pgpDecryptedPvtKey
       );
     } else if (message.includes("/ipfs-push")) {
@@ -311,11 +303,12 @@ export const beginSocket = async () => {
           // console.info("add event", evt.type, evt.detail);
         },
       });
+
       console.log("Added file:", cid.toString());
       await sendMessage(
         `IPFS CID: ` + cid.toString(),
         "Text",
-        chatID,
+        chatID || userDID,
         pgpDecryptedPvtKey
       );
     } else if (message.includes("/fvm-create-new-group")) {
@@ -324,7 +317,7 @@ export const beginSocket = async () => {
         .trim()
         .split(",");
       const response = await PushAPI.chat.createGroup({
-        ENV: ENV.DEV,
+        ENV: process.env.ENV,
         groupName: "FVM DataDao " + Math.floor(Math.random() * 1000),
         groupDescription: "FVM Datadao control group",
         members: members,
@@ -344,7 +337,12 @@ export const beginSocket = async () => {
       let storage = await getStorage();
       let tokenAddress = storage[chatID].info.dataGovernanceToken;
       const delegateButton = `<html><button onclick="let a = async()=>{console.log('loaded1');await window.ethereum.request({method: 'wallet_switchEthereumChain',params: [{ chainId: '0x4CB2F' }]}); app_abi = ['function delegate(address delegatee)']; let ct = new window.ethers.Contract('${tokenAddress}', app_abi,window.myWeb3Provider.getSigner()); await ct.delegate('${address}'); await window.ethereum.request({method: 'wallet_switchEthereumChain',params: [{ chainId: '0x5' }]})}; a().catch(console.error);">Click me to delegate</button></html>`;
-      await sendMessage(delegateButton, "Text", chatID, pgpDecryptedPvtKey);
+      await sendMessage(
+        delegateButton,
+        "Text",
+        chatID || userDID,
+        pgpDecryptedPvtKey
+      );
 
       // fvm propose needs to send the proposal piece cid
       // /fvm-propose <piece_cid>,<piece_size>,<piece_label>,<location_ref>,<car_size>,<proposal_description>
@@ -415,7 +413,7 @@ export const beginSocket = async () => {
           await sendMessage(
             `Proposing ${functionToCall} on ${daoDealClient.address} with ${DealRequestStruct}`,
             "Text",
-            chatID,
+            chatID || userDID,
             pgpDecryptedPvtKey
           );
         } catch (e) {
@@ -445,13 +443,13 @@ export const beginSocket = async () => {
         };
         storage[chatID].proposals = proposals;
         await saveToStorage(storage);
-        await sendMessage(txt, "Text", chatID, pgpDecryptedPvtKey);
+        await sendMessage(txt, "Text", chatID || userDID, pgpDecryptedPvtKey);
       } catch (e) {
         console.error(e);
         await sendMessage(
           "Error creating the proposal\n\n: " + e,
           "Text",
-          chatID,
+          chatID || userDID,
           pgpDecryptedPvtKey
         );
       }
@@ -465,7 +463,7 @@ export const beginSocket = async () => {
         await sendMessage(
           "Proposal ID is missing",
           "Text",
-          chatID,
+          chatID || userDID,
           pgpDecryptedPvtKey
         );
         return;
@@ -476,7 +474,7 @@ export const beginSocket = async () => {
       let governorAddress = s.info.governor;
       let buttons = `<html><button onclick="let a = async()=>{console.log('loaded2');await window.ethereum.request({method: 'wallet_switchEthereumChain',params: [{ chainId: '0x4CB2F' }]}); app_abi = ['function castVoteWithReason(uint256 proposalId,uint8 support,string calldata reason)  returns (uint256)']; let ct = new window.ethers.Contract('${governorAddress}', app_abi,window.myWeb3Provider.getSigner()); await ct.castVoteWithReason('${proposalId}', 1, ''); await window.ethereum.request({method: 'wallet_switchEthereumChain',params: [{ chainId: '0x5' }]})}; a().catch(console.error);">Yes</button><button onclick="let a = async()=>{console.log('loaded2');await window.ethereum.request({method: 'wallet_switchEthereumChain',params: [{ chainId: '0x4CB2F' }]}); app_abi = ['function castVoteWithReason(uint256 proposalId,uint8 support,string calldata reason)  returns (uint256)']; let ct = new window.ethers.Contract('${governorAddress}', app_abi,window.myWeb3Provider.getSigner()); await ct.castVoteWithReason('${proposalId}', 0, ''); await window.ethereum.request({method: 'wallet_switchEthereumChain',params: [{ chainId: '0x5' }]})}; a().catch(console.error);">No</button><button onclick="let a = async()=>{console.log('loaded2');await window.ethereum.request({method: 'wallet_switchEthereumChain',params: [{ chainId: '0x4CB2F' }]}); app_abi = ['function castVoteWithReason(uint256 proposalId,uint8 support,string calldata reason)  returns (uint256)']; let ct = new window.ethers.Contract('${governorAddress}', app_abi,window.myWeb3Provider.getSigner()); await ct.castVoteWithReason('${proposalId}', 2, ''); await window.ethereum.request({method: 'wallet_switchEthereumChain',params: [{ chainId: '0x5' }]})}; a().catch(console.error);">Abstain</button></html>`;
       // we need to send back 3 buttons, yes, no or abstain
-      await sendMessage(buttons, "Text", chatID, pgpDecryptedPvtKey);
+      await sendMessage(buttons, "Text", chatID || userDID, pgpDecryptedPvtKey);
       //execute a proposal
       // to execute the user needs to send /fvm-execute <proposalID>
     } else if (message.includes("/fvm-execute")) {
@@ -489,7 +487,7 @@ export const beginSocket = async () => {
       await sendMessage(
         "Queuing proposal with ID " + proposalId,
         "Text",
-        chatID,
+        chatID || userDID,
         pgpDecryptedPvtKey
       );
       try {
@@ -510,7 +508,7 @@ export const beginSocket = async () => {
         await sendMessage(
           "Queueing done, executing proposal with ID " + proposalId,
           "Text",
-          chatID,
+          chatID || userDID,
           pgpDecryptedPvtKey
         );
         const executeTx = await governor.execute(
@@ -524,7 +522,7 @@ export const beginSocket = async () => {
         await sendMessage(
           "Proposal" + proposalId + " successfully executed!",
           "Text",
-          chatID,
+          chatID || userDID,
           pgpDecryptedPvtKey
         );
       } catch (e) {
@@ -532,7 +530,7 @@ export const beginSocket = async () => {
         await sendMessage(
           "Queueing and executing failed for proposal " + proposalId,
           "Text",
-          chatID,
+          chatID || userDID,
           pgpDecryptedPvtKey
         );
       }
@@ -542,10 +540,11 @@ export const beginSocket = async () => {
 
   const sendMessage = async (message, type, toDID, pgpDecryptedPvtKey) => {
     return await PushAPI.chat.send({
-      env: ENV.DEV,
+      env: process.env.ENV,
       messageContent: message,
       messageType: type, // can be "Text" | "Image" | "File" | "GIF"
       receiverAddress: toDID,
+      // account: "eip155:" + process.env.ROBOT_ADDRESS,
       signer: _signer,
       pgpPrivateKey: pgpDecryptedPvtKey,
     });
@@ -572,7 +571,7 @@ const deployDataDao = async (chatID, pgpDecryptedPvtKey) => {
       let msg = data.split("COMM:")[1];
       try {
         await PushAPI.chat.send({
-          env: ENV.DEV,
+          env: process.env.ENV,
           messageContent: msg,
           messageType: "Text", // can be "Text" | "Image" | "File" | "GIF"
           receiverAddress: chatID,
@@ -595,7 +594,7 @@ const deployDataDao = async (chatID, pgpDecryptedPvtKey) => {
       let timeLock = deployed.timeLock;
 
       let req = await PushAPI.chat.getGroup({
-        env: ENV.DEV,
+        env: process.env.ENV,
         chatId: chatID,
       });
 
@@ -618,7 +617,7 @@ const deployDataDao = async (chatID, pgpDecryptedPvtKey) => {
       }
 
       await PushAPI.chat.send({
-        env: ENV.DEV,
+        env: process.env.ENV,
         messageContent:
           "Successfully deployed! Each of you have 10 shares. Please delegate your share before you vote.",
         messageType: "Text", // can be "Text" | "Image" | "File" | "GIF"
@@ -627,7 +626,7 @@ const deployDataDao = async (chatID, pgpDecryptedPvtKey) => {
         pgpPrivateKey: pgpDecryptedPvtKey,
       });
       await PushAPI.chat.send({
-        env: ENV.DEV,
+        env: process.env.ENV,
         messageContent: d,
         messageType: "Text", // can be "Text" | "Image" | "File" | "GIF"
         receiverAddress: chatID,
@@ -635,7 +634,12 @@ const deployDataDao = async (chatID, pgpDecryptedPvtKey) => {
         pgpPrivateKey: pgpDecryptedPvtKey,
       });
       const delegateButton = `<html><button onclick="let a = async()=>{console.log('loaded1');await window.ethereum.request({method: 'wallet_switchEthereumChain',params: [{ chainId: '0x4CB2F' }]}); app_abi = ['function delegate(address delegatee)']; let ct = new window.ethers.Contract('${tokenAddress}', app_abi,window.myWeb3Provider.getSigner()); await ct.delegate('${address}'); await window.ethereum.request({method: 'wallet_switchEthereumChain',params: [{ chainId: '0x5' }]})}; a().catch(console.error);">Click me to delegate</button></html>`;
-      await sendMessage(delegateButton, "Text", chatID, pgpDecryptedPvtKey);
+      await sendMessage(
+        delegateButton,
+        "Text",
+        chatID || userDID,
+        pgpDecryptedPvtKey
+      );
 
       let storage = await JSON.parse(
         (await promises.readFile("storage.json")).toString()
