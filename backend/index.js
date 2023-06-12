@@ -633,13 +633,6 @@ const deployDataDao = async (chatID, pgpDecryptedPvtKey) => {
         signer: _signer,
         pgpPrivateKey: pgpDecryptedPvtKey,
       });
-      const delegateButton = `<html><button onclick="let a = async()=>{console.log('loaded1');await window.ethereum.request({method: 'wallet_switchEthereumChain',params: [{ chainId: '0x4CB2F' }]}); app_abi = ['function delegate(address delegatee)']; let ct = new window.ethers.Contract('${tokenAddress}', app_abi,window.myWeb3Provider.getSigner()); await ct.delegate('${address}'); await window.ethereum.request({method: 'wallet_switchEthereumChain',params: [{ chainId: '0x5' }]})}; a().catch(console.error);">Click me to delegate</button></html>`;
-      await sendMessage(
-        delegateButton,
-        "Text",
-        chatID || userDID,
-        pgpDecryptedPvtKey
-      );
 
       let storage = await JSON.parse(
         (await promises.readFile("storage.json")).toString()
