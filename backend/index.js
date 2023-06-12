@@ -23,41 +23,6 @@ const networkConfig = {
   },
 };
 
-const extraParamsV1 = [
-  //location_ref
-  "https://data-depot.lighthouse.storage/api/download/download_car?fileId=65e0bdfa-5fd3-4de7-ade1-045a8c7b353c.car",
-  //car_size
-  1439273,
-  // skip_ipni_announce
-  "true",
-  // remove_unsealed_copy
-  "false",
-];
-
-const DealRequestStruct = [
-  //piece_cid
-  "0x000181e20392202007554549d24e42b38403cbd9d30d30299010c75e8473c4a131c6fa5b04267220",
-  //piece_size;
-  2097152,
-  // verified_deal;
-  false,
-  // label
-  "bafybeicxcclvlid2ocrksh52lub3ny6vd3muic5etjppd2r7g6pcfdxufm",
-  //start_epoch
-  270000,
-  //end_epoch
-  700000,
-  //storage_price_per_epoch
-  0,
-  // provider_collateral
-  0,
-  // client_collateral
-  0,
-  //extra_params_version
-  1,
-  extraParamsV1,
-];
-
 const erc20_abi = [
   // Read-Only Functions
   "function balanceOf(address owner) view returns (uint256)",
@@ -279,11 +244,11 @@ export const beginSocket = async () => {
         await sendMessage(
           "Please subscribe with some Apecoin",
           "Text",
-          userDID,
+          chatID,
           pgpDecryptedPvtKey
         );
 
-        await sendMessage(subButton, "Text", userDID, pgpDecryptedPvtKey);
+        await sendMessage(subButton, "Text", chatID, pgpDecryptedPvtKey);
 
         return;
       }
@@ -298,7 +263,7 @@ export const beginSocket = async () => {
         aiMsg = completion.data.choices[0].message?.content || "";
       }
 
-      await sendMessage(aiMsg, "Text", userDID, pgpDecryptedPvtKey);
+      await sendMessage(aiMsg, "Text", chatID, pgpDecryptedPvtKey);
     } else if (message.includes("/subscribe")) {
       try {
         let message = "You have already subscribed!";
@@ -307,7 +272,7 @@ export const beginSocket = async () => {
           message = subButton;
         }
 
-        await sendMessage(message, "Text", userDID, pgpDecryptedPvtKey);
+        await sendMessage(message, "Text", chatID, pgpDecryptedPvtKey);
       } catch (err) {
         console.error(err);
       }
@@ -322,7 +287,6 @@ export const beginSocket = async () => {
       }
       let buffer = Buffer.from(fileContent);
       let mimeType = await fileTypeFromBuffer(buffer);
-      console.log(mimeType);
       let f = buffer.toString("base64");
       let file = {
         name: ipfsCID,
@@ -335,7 +299,7 @@ export const beginSocket = async () => {
       await sendMessage(
         JSON.stringify(file),
         "File",
-        userDID,
+        chatID,
         pgpDecryptedPvtKey
       );
     } else if (message.includes("/ipfs-push")) {
@@ -351,7 +315,7 @@ export const beginSocket = async () => {
       await sendMessage(
         `IPFS CID: ` + cid.toString(),
         "Text",
-        userDID,
+        chatID,
         pgpDecryptedPvtKey
       );
     } else if (message.includes("/fvm-create-new-group")) {
@@ -372,11 +336,6 @@ export const beginSocket = async () => {
         pgpPrivateKey: pgpDecryptedPvtKey, //decrypted private key
       });
     } else if (message.includes("/fvm-redeploy")) {
-      let req = await PushAPI.chat.getGroup({
-        env: ENV.DEV,
-        chatId: chatID,
-      });
-
       await deployDataDao(chatID, pgpDecryptedPvtKey);
     } else if (message.includes("/fvm-delegate-votes")) {
       // delegate to themselves
@@ -386,9 +345,17 @@ export const beginSocket = async () => {
       let tokenAddress = storage[chatID].info.dataGovernanceToken;
       const delegateButton = `<html><button onclick="let a = async()=>{console.log('loaded1');await window.ethereum.request({method: 'wallet_switchEthereumChain',params: [{ chainId: '0x4CB2F' }]}); app_abi = ['function delegate(address delegatee)']; let ct = new window.ethers.Contract('${tokenAddress}', app_abi,window.myWeb3Provider.getSigner()); await ct.delegate('${address}'); await window.ethereum.request({method: 'wallet_switchEthereumChain',params: [{ chainId: '0x5' }]})}; a().catch(console.error);">Click me to delegate</button></html>`;
       await sendMessage(delegateButton, "Text", chatID, pgpDecryptedPvtKey);
+
+      // fvm propose needs to send the proposal piece cid
+      // /fvm-propose <piece_cid>,<piece_size>,<piece_label>,<location_ref>,<car_size>,<proposal_description>
     } else if (message.includes("/fvm-propose")) {
-      let proposal = message.replace("/fvm-propose", "").trim();
-      let proposalDescription = proposal;
+      let proposal = message.replace("/fvm-propose", "").trim().split(",");
+      let pieceCID = proposal[0];
+      let pieceSize = proposal[1];
+      let pieceLabel = proposal[2];
+      let locationRef = proposal[3];
+      let carSize = proposal[4];
+      let proposalDescription = proposal[5];
       let storage = await getStorage();
       let s = storage[chatID];
       let dealAddress = s.info.daoDeal;
@@ -403,51 +370,106 @@ export const beginSocket = async () => {
         governorABI,
         filWallet
       );
-      const functionToCall = "makeDealProposal";
-      const encodedFunctionCall = daoDealClient.interface.encodeFunctionData(
-        functionToCall,
-        [DealRequestStruct]
-      );
-
       try {
+        const functionToCall = "makeDealProposal";
+        let DealRequestStruct = [
+          [
+            //piece_cid
+            pieceCID,
+            //piece_size;
+            pieceSize,
+            // verified_deal;
+            false,
+            // label
+            pieceLabel,
+            //start_epoch
+            270000,
+            //end_epoch
+            700000,
+            //storage_price_per_epoch
+            0,
+            // provider_collateral
+            0,
+            // client_collateral
+            0,
+            //extra_params_version
+            1,
+            [
+              //location_ref
+              locationRef,
+              //car_size
+              carSize,
+              // skip_ipni_announce
+              "true",
+              // remove_unsealed_copy
+              "false",
+            ],
+          ],
+        ];
+        const encodedFunctionCall = daoDealClient.interface.encodeFunctionData(
+          functionToCall,
+          DealRequestStruct
+        );
+
+        try {
+          await sendMessage(
+            `Proposing ${functionToCall} on ${daoDealClient.address} with ${DealRequestStruct}`,
+            "Text",
+            chatID,
+            pgpDecryptedPvtKey
+          );
+        } catch (e) {
+          console.error(e);
+        }
+        const proposeTx = await governor.propose(
+          [daoDealClient.address],
+          [0],
+          [encodedFunctionCall],
+          proposalDescription
+        );
+
+        const proposeReceipt = await proposeTx.wait();
+        const proposalId = proposeReceipt.events[0].args.proposalId;
+        let txt = `Proposed with proposal ID: ${proposalId}`;
+        console.log(txt);
+        let proposals = storage[chatID].proposals || {};
+        proposals[proposalId] = {
+          dealStruct: DealRequestStruct,
+          targets: [daoDealClient.address],
+          values: [0],
+          encodedFunctionCall: [encodedFunctionCall],
+          proposalDescription: proposalDescription,
+          proposalDescriptionHash: ethers.utils.keccak256(
+            ethers.utils.toUtf8Bytes(proposalDescription)
+          ),
+        };
+        storage[chatID].proposals = proposals;
+        await saveToStorage(storage);
+        await sendMessage(txt, "Text", chatID, pgpDecryptedPvtKey);
+      } catch (e) {
+        console.error(e);
         await sendMessage(
-          `Proposing ${functionToCall} on ${daoDealClient.address} with ${DealRequestStruct}`,
+          "Error creating the proposal\n\n: " + e,
           "Text",
           chatID,
           pgpDecryptedPvtKey
         );
-      } catch (e) {
-        console.error(e);
       }
-      const proposeTx = await governor.propose(
-        [daoDealClient.address],
-        [0],
-        [encodedFunctionCall],
-        proposalDescription
-      );
-
-      const proposeReceipt = await proposeTx.wait();
-      const proposalId = proposeReceipt.events[0].args.proposalId;
-      let txt = `Proposed with proposal ID:\n  ${proposalId}`;
-      console.log(txt);
-      let proposals = storage[chatID].proposals || {};
-      proposals[proposalId] = {
-        targets: [daoDealClient.address],
-        values: [0],
-        encodedFunctionCall: [encodedFunctionCall],
-        proposalDescription: proposalDescription,
-        proposalDescriptionHash: ethers.utils.keccak256(
-          ethers.utils.toUtf8Bytes(proposalDescription)
-        ),
-      };
-      storage[chatID].proposals = proposals;
-      await saveToStorage(storage);
-      await sendMessage(txt, "Text", chatID, pgpDecryptedPvtKey);
 
       // propose a file to store
       // to vote the user needs to send /fvm-vote <proposalID>
     } else if (message.includes("/fvm-vote")) {
       let proposalId = message.replace("/fvm-vote", "").trim();
+
+      if (!proposalId) {
+        await sendMessage(
+          "Proposal ID is missing",
+          "Text",
+          chatID,
+          pgpDecryptedPvtKey
+        );
+        return;
+      }
 
       let storage = await getStorage();
       let s = storage[chatID];
@@ -612,9 +634,14 @@ const deployDataDao = async (chatID, pgpDecryptedPvtKey) => {
         signer: _signer,
         pgpPrivateKey: pgpDecryptedPvtKey,
       });
-      let storage = await getStorage();
-      let s = storage[chatID];
-      storage[chatID] = { info: deployed, ...s };
+      const delegateButton = `<html><button onclick="let a = async()=>{console.log('loaded1');await window.ethereum.request({method: 'wallet_switchEthereumChain',params: [{ chainId: '0x4CB2F' }]}); app_abi = ['function delegate(address delegatee)']; let ct = new window.ethers.Contract('${tokenAddress}', app_abi,window.myWeb3Provider.getSigner()); await ct.delegate('${address}'); await window.ethereum.request({method: 'wallet_switchEthereumChain',params: [{ chainId: '0x5' }]})}; a().catch(console.error);">Click me to delegate</button></html>`;
+      await sendMessage(delegateButton, "Text", chatID, pgpDecryptedPvtKey);
+
+      let storage = await JSON.parse(
+        (await promises.readFile("storage.json")).toString()
+      );
+      storage[chatID] = { info: deployed };
+
       await promises.writeFile("storage.json", JSON.stringify(storage));
     }
   });
@@ -629,9 +656,3 @@ const deployDataDao = async (chatID, pgpDecryptedPvtKey) => {
 };
 
 beginSocket().catch(console.error);
-
-// /ipfs-get QmSxQCdduj4C9amh4p1GgnYFDthwQM9kcCx5N4PqMw7qAq
-
-// create button on frontend to create a DataDAO group
-// the backend finds the group and sets up a brand new DATADAO with the members of the group, all the while it is updating what is happening
-// then take care of all of the things in the backend
