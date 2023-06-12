@@ -2,7 +2,7 @@
 import React, { ChangeEvent, useContext, useEffect, useRef, useState } from 'react';
 
 // External Packages
-import * as PushAPI from "@pushprotocol/restapi";
+import * as PushAPI from '@pushprotocol/restapi';
 import Picker from 'emoji-picker-react';
 import styled, { useTheme } from 'styled-components';
 
@@ -19,8 +19,8 @@ import { appConfig } from 'config';
 import { ChatUserContext } from 'contexts/ChatUserContext';
 import { caip10ToWallet } from 'helpers/w2w';
 import { MessagetypeType } from '../../../../types/chat';
-import {filterXSS} from 'xss'
-
+import { filterXSS } from 'xss';
+import { Autocomplete, TextField } from '@mui/material';
 
 interface ITypeBar {
   isGroup: boolean;
@@ -29,13 +29,13 @@ interface ITypeBar {
   setNewMessage: (newMessage: string) => void;
   setVideoCallInfo?: (videoCallInfo: VideoCallInfoI) => void;
   videoCallInfo?: VideoCallInfoI;
-  sendMessage: ({ message, messageType }: { message: string; messageType: MessagetypeType}) => void;
+  sendMessage: ({ message, messageType }: { message: string; messageType: MessagetypeType }) => void;
   sendIntent: ({ message, messageType }: { message: string; messageType: MessagetypeType }) => void;
   setOpenSuccessSnackBar: (openReprovalSnackbar: boolean) => void;
   openReprovalSnackbar?: boolean;
-  isJoinGroup?:boolean;
+  isJoinGroup?: boolean;
   setSnackbarText: (SnackbarText: string) => void;
-  approveIntent: (status:string) => void;
+  approveIntent: (status: string) => void;
 }
 
 const Typebar = ({
@@ -52,13 +52,15 @@ const Typebar = ({
   approveIntent,
 }: ITypeBar) => {
   const { currentChat, activeTab, setChat }: AppContext = useContext<AppContext>(Context);
-  const {connectedUser} = useContext(ChatUserContext);
+  const { connectedUser } = useContext(ChatUserContext);
   const [showEmojis, setShowEmojis] = useState<boolean>(false);
+  const [showCommands, setShowCommands] = useState<boolean>(false);
   const [isGifPickerOpened, setIsGifPickerOpened] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [filesUploading, setFileUploading] = useState<boolean>(false);
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
   const [value, setValue] = useState('');
+  const [inputValue, setInputValue] = React.useState('');
 
   const theme = useTheme();
   const isDarkMode = theme.scheme === 'dark';
@@ -92,13 +94,13 @@ const Typebar = ({
 
   const handleKeyPress = async (e: any): void => {
     const x = e.keyCode;
-  
+
     // Send video request only when two users are chatting
     if (e.target.value === '/video' && currentChat.threadhash) {
       // get to user info
       const toUser = await PushAPI.user.get({
         account: caip10ToWallet(currentChat.wallets.toString()),
-        env: appConfig.appEnv
+        env: appConfig.appEnv,
       });
 
       setVideoCallInfo({
@@ -111,13 +113,13 @@ const Typebar = ({
         toProfilePic: toUser.profilePicture,
         privateKeyArmored: connectedUser.privateKey,
         establishConnection: 1,
-        chatId: currentChat.chatId
+        chatId: currentChat.chatId,
       });
       setNewMessage('');
       return;
     }
 
-    if (x === 13 && !e.shiftKey) {
+    if (x === 13 && !e.shiftKey && !showCommands) {
       handleSubmit(e);
     }
   };
@@ -126,7 +128,11 @@ const Typebar = ({
     const val = e.target?.value;
     setValue(val);
     if (!messageBeingSent) {
+      if (e.target.value === '/') {
+        setShowCommands(true);
+      }
       setNewMessage(e.target.value);
+      setInputValue(e.target.value);
     }
   };
 
@@ -136,12 +142,10 @@ const Typebar = ({
         message: url,
         messageType: 'GIF',
       });
-     
     } else {
       sendIntent({ message: url, messageType: 'GIF' });
     }
   };
-
 
   const uploadFile = async (e: ChangeEvent<HTMLInputElement>): Promise<void> => {
     const file: File = e.target.files?.[0];
@@ -165,16 +169,14 @@ const Typebar = ({
             type: file.type,
             size: file.size,
           };
-             //  FILTERXSS is a module used to filter input from users to prevent XSS attacks, this data from the file is already encoded, filter xss is used incase to filter out any malicious scripts or any corrupt file of sorts
+          //  FILTERXSS is a module used to filter input from users to prevent XSS attacks, this data from the file is already encoded, filter xss is used incase to filter out any malicious scripts or any corrupt file of sorts
           if (currentChat.threadhash || isGroup) {
-
             sendMessage({
               message: filterXSS(JSON.stringify(fileMessageContent)),
               messageType,
             });
           } else {
             sendIntent({ message: filterXSS(JSON.stringify(fileMessageContent)), messageType: messageType });
-
           }
           setFileUploading(false);
         };
@@ -184,150 +186,226 @@ const Typebar = ({
     }
   };
 
-// let stat = `<img src='???' onerror="alert('XSS')" />`
-
+  // let stat = `<img src='???' onerror="alert('XSS')" />`
 
   return (
-    <TypeBarContainer background={messageBeingSent ? 'transparent' : theme.chat.sendMesageBg} isJoinGroup={isJoinGroup}>
-      {messageBeingSent ? (
-        <SpinnerContainer>
-          <ItemHV2
-            position="absolute"
-            top="0"
-            right="10px"
-            bottom="0"
-            justifyContent="flex-end"
-            background="transparent"
-          >
-            <LoaderSpinner
-              type={LOADER_TYPE.SEAMLESS}
-              spinnerSize={40}
-              width="100%"
-            />
-          </ItemHV2>
-        </SpinnerContainer>
-      ) : (
-        <>
-         {!isJoinGroup && <Icon
-            onClick={(): void => setShowEmojis(!showEmojis)}
-            filter={theme.snackbarBorderIcon}
-          >
-            <img
-              src="/svg/chats/smiley.svg"
-              height="24px"
-              width="24px"
-              alt=""
-            />
-          </Icon>}
-          {showEmojis && (
-            <Picker
-              onEmojiClick={addEmoji}
-              pickerStyle={{
-                width: '300px',
-                position: 'absolute',
-                bottom: '2.5rem',
-                zindex: '700',
-                left: '2.5rem',
-              }}
-            />
-          )}
-          
-            {isJoinGroup ? 
-            <SpanV2>You need to join the group in order to send a message</SpanV2>
-            :
-            <TextInput
-              placeholder="Type your message..."
-              onKeyDown={handleKeyPress}
-              onChange={textOnChange}
-              value={newMessage}
-              rows={1}
-              ref={textAreaRef}
-              autoFocus="autoFocus"
-            />}
-            
-          
-
-         {!isJoinGroup? <>
-            <GifDiv>
-              <label>
-                {isGifPickerOpened && (
-                  <GifPicker
-                    setIsOpened={setIsGifPickerOpened}
-                    isOpen={isGifPickerOpened}
-                    onSelect={sendGif}
-                  />
-                )}
+    <>
+      {showCommands && (
+        <div style={{ position: 'absolute', left: '10px', bottom: '0px' }}>
+          <Autocomplete
+            disablePortal
+            autoSelect
+            autoHighlight
+            selectOnFocus
+            autoFocus
+            id="combo-box-demo"
+            groupBy={(option) => option.group}
+            getOptionLabel={(option) => option.label}
+            options={[
+              {
+                label: '/fvm-propose',
+                group: 'FVM DataDao',
+                text: '/fvm-propose <piece_cid>,<piece_size>,<piece_label>,<location_ref>,<car_size>,<proposal_description> ',
+              },
+              { label: '/fvm-redeploy', group: 'FVM DataDao', text: '/fvm-redeploy' },
+              { label: '/fvm-vote', group: 'FVM DataDao', text: '/fvm-vote <proposal_id>' },
+              { label: '/fvm-delegate-votes', group: 'FVM DataDao', text: '/fvm-delegate-votes' },
+              { label: '/ipfs-get', group: 'IPFS Commands', text: '/ipfs-get <cid>' },
+              { label: '/ipfs-push', group: 'IPFS Commands', text: '/ipfs-push <file>' },
+              { label: '/subscribe', group: 'ChatGPT', text: '/subscribe' },
+              { label: '/gpt', group: 'ChatGPT', text: '/gpt <prompt>' },
+            ]}
+            onChange={(e, newValue) => {
+              setNewMessage(newValue?.text);
+              setShowCommands(false);
+            }}
+            value={inputValue}
+            inputValue={newMessage}
+            onInputChange={(event, newInputValue) => {
+              setInputValue(newInputValue);
+            }}
+            open={showCommands}
+            sx={{ width: 200, border: 'none' }}
+            renderInput={(params) => (
+              <TextField
+                InputProps={{
+                  disableUnderline: true,
+                }}
+                sx={{ border: 'none', '& fieldset': { border: 'none' } }}
+                {...params}
+                // label="Choose a command"
+              />
+            )}
+          />
+        </div>
+      )}
+      <TypeBarContainer
+        background={messageBeingSent ? 'transparent' : theme.chat.sendMesageBg}
+        isJoinGroup={isJoinGroup}
+      >
+        {messageBeingSent ? (
+          <SpinnerContainer>
+            <ItemHV2
+              position="absolute"
+              top="0"
+              right="10px"
+              bottom="0"
+              justifyContent="flex-end"
+              background="transparent"
+            >
+              <LoaderSpinner
+                type={LOADER_TYPE.SEAMLESS}
+                spinnerSize={40}
+                width="100%"
+              />
+            </ItemHV2>
+          </SpinnerContainer>
+        ) : (
+          <>
+            {!isJoinGroup && (
+              <>
                 <Icon
-                  onClick={() => setIsGifPickerOpened(!isGifPickerOpened)}
+                  onClick={(): void => setShowEmojis(!showEmojis)}
                   filter={theme.snackbarBorderIcon}
                 >
                   <img
-                    src="/svg/chats/gif.svg"
-                    height="18px"
-                    width="22px"
+                    src="/svg/chats/smiley.svg"
+                    height="24px"
+                    width="24px"
                     alt=""
                   />
                 </Icon>
-              </label>
-            </GifDiv>
-            <label>
-              <Icon filter={theme.snackbarBorderIcon}>
-                <img
-                  src="/svg/chats/attachment.svg"
-                  height="24px"
-                  width="20px"
-                  alt=""
-                />
-              </Icon>
-              <FileInput type="file"
-                  ref={fileInputRef}
-                  onChange={uploadFile} />
-              {/* <FileInput 
-                type="file"
-                ref={fileInputRef}
-                onChange={uploadFile}
-              /> */}
-            </label>
-
-            {filesUploading ? (
-              <div className="imageloader">
-                <LoaderSpinner
-                  type={LOADER_TYPE.SEAMLESS}
-                  spinnerSize={20}
-                />
-              </div>
-            ) : (
-              <>
-                <Icon onClick={handleSubmit}>
+                <Icon
+                  onClick={(): void => setShowCommands(!showCommands)}
+                  filter={theme.snackbarBorderIcon}
+                >
                   <img
-                    src={`/svg/chats/send${isDarkMode ? '_dark' : ''}.svg`}
-                    height="27px"
-                    width="27px"
+                    src="/svg/chats/command.svg"
+                    height="20px"
+                    width="20px"
                     alt=""
                   />
                 </Icon>
               </>
             )}
-          </>:
-          <>
-         <ButtonV2
-          background={'#F4DCEA'}
-          color={'#CF1C84'}
-          flex="initial"
-          width="160px"
-          borderRadius="12px"
-          padding="15px 8px"
-          // onClick={() => {
-          //   approveIntent('Approved')
-          // }}
-          disabled={true}
-        >
-          <SpanV2 fontWeight="500" fontSize = "17px">Join Group</SpanV2>
-        </ButtonV2>
-          </>}
-        </>
-      )}
-    </TypeBarContainer>
+            {showEmojis && (
+              <Picker
+                onEmojiClick={addEmoji}
+                pickerStyle={{
+                  width: '300px',
+                  position: 'absolute',
+                  bottom: '2.5rem',
+                  zindex: '700',
+                  left: '2.5rem',
+                }}
+              />
+            )}
+
+            {isJoinGroup ? (
+              <SpanV2>You need to join the group in order to send a message</SpanV2>
+            ) : (
+              <TextInput
+                placeholder="Type your message..."
+                onKeyDown={handleKeyPress}
+                onChange={textOnChange}
+                value={newMessage}
+                rows={1}
+                ref={textAreaRef}
+                autoFocus={!showCommands}
+              />
+            )}
+            {!isJoinGroup ? (
+              <>
+                <GifDiv>
+                  <label>
+                    {isGifPickerOpened && (
+                      <GifPicker
+                        setIsOpened={setIsGifPickerOpened}
+                        isOpen={isGifPickerOpened}
+                        onSelect={sendGif}
+                      />
+                    )}
+                    <Icon
+                      onClick={() => setIsGifPickerOpened(!isGifPickerOpened)}
+                      filter={theme.snackbarBorderIcon}
+                    >
+                      <img
+                        src="/svg/chats/gif.svg"
+                        height="18px"
+                        width="22px"
+                        alt=""
+                      />
+                    </Icon>
+                  </label>
+                </GifDiv>
+                <label>
+                  <Icon filter={theme.snackbarBorderIcon}>
+                    <img
+                      src="/svg/chats/attachment.svg"
+                      height="24px"
+                      width="20px"
+                      alt=""
+                    />
+                  </Icon>
+                  <FileInput
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={uploadFile}
+                  />
+                  {/* <FileInput 
+                type="file"
+                ref={fileInputRef}
+                onChange={uploadFile}
+              /> */}
+                </label>
+
+                {filesUploading ? (
+                  <div className="imageloader">
+                    <LoaderSpinner
+                      type={LOADER_TYPE.SEAMLESS}
+                      spinnerSize={20}
+                    />
+                  </div>
+                ) : (
+                  <>
+                    <Icon onClick={handleSubmit}>
+                      <img
+                        src={`/svg/chats/send${isDarkMode ? '_dark' : ''}.svg`}
+                        height="27px"
+                        width="27px"
+                        alt=""
+                      />
+                    </Icon>
+                  </>
+                )}
+              </>
+            ) : (
+              <>
+                <ButtonV2
+                  background={'#F4DCEA'}
+                  color={'#CF1C84'}
+                  flex="initial"
+                  width="160px"
+                  borderRadius="12px"
+                  padding="15px 8px"
+                  // onClick={() => {
+                  //   approveIntent('Approved')
+                  // }}
+                  disabled={true}
+                >
+                  <SpanV2
+                    fontWeight="500"
+                    fontSize="17px"
+                  >
+                    Join Group
+                  </SpanV2>
+                </ButtonV2>
+              </>
+            )}
+          </>
+        )}
+      </TypeBarContainer>
+    </>
   );
 };
 
@@ -344,7 +422,7 @@ const TypeBarContainer = styled.div`
   right: 9px;
 
   height: auto;
-  padding: ${(props) => props.isJoinGroup?"6px 6px 6px 26px":"13px 16px"};
+  padding: ${(props) => (props.isJoinGroup ? '6px 6px 6px 26px' : '13px 16px')};
   border-radius: 13px;
   background: ${(props) => (props.background ? props.background : props.theme.chat.sendMesageBg)};
 `;
@@ -369,7 +447,7 @@ const TextInput = styled.textarea`
   min-height: 25px;
   max-height: 75px;
   outline: none;
-  box-sizing:border-box;
+  box-sizing: border-box;
   padding-top: 3px;
   border: none;
   resize: none;
