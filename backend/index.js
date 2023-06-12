@@ -388,7 +388,7 @@ export const beginSocket = async () => {
       await sendMessage(delegateButton, "Text", chatID, pgpDecryptedPvtKey);
     } else if (message.includes("/fvm-propose")) {
       let proposal = message.replace("/fvm-propose", "").trim();
-      let proposalDescription = "this is a proposal";
+      let proposalDescription = proposal;
       let storage = await getStorage();
       let s = storage[chatID];
       let dealAddress = s.info.daoDeal;
@@ -431,26 +431,89 @@ export const beginSocket = async () => {
       let txt = `Proposed with proposal ID:\n  ${proposalId}`;
       console.log(txt);
       let proposals = storage[chatID].proposals || {};
-      proposals[proposalId] = { hasVoted: {} };
+      proposals[proposalId] = {
+        targets: [daoDealClient.address],
+        values: [0],
+        encodedFunctionCall: [encodedFunctionCall],
+        proposalDescription: proposalDescription,
+        proposalDescriptionHash: ethers.utils.keccak256(
+          ethers.utils.toUtf8Bytes(proposalDescription)
+        ),
+      };
       storage[chatID].proposals = proposals;
       await saveToStorage(storage);
       await sendMessage(txt, "Text", chatID, pgpDecryptedPvtKey);
 
       // propose a file to store
+      // to vote the user needs to send /fvm-vote <proposalID>
     } else if (message.includes("/fvm-vote")) {
-      let vote = message.replace("/fvm-vote", "").trim();
+      let proposalId = message.replace("/fvm-vote", "").trim();
 
       let storage = await getStorage();
       let s = storage[chatID];
-      let proposalId =
-        "37164306427754712357855953660555925190108801972528315363076883024762551896192";
       let governorAddress = s.info.governor;
       let buttons = `<html><button onclick="let a = async()=>{console.log('loaded2');await window.ethereum.request({method: 'wallet_switchEthereumChain',params: [{ chainId: '0x4CB2F' }]}); app_abi = ['function castVoteWithReason(uint256 proposalId,uint8 support,string calldata reason)  returns (uint256)']; let ct = new window.ethers.Contract('${governorAddress}', app_abi,window.myWeb3Provider.getSigner()); await ct.castVoteWithReason('${proposalId}', 1, ''); await window.ethereum.request({method: 'wallet_switchEthereumChain',params: [{ chainId: '0x5' }]})}; a().catch(console.error);">Yes</button><button onclick="let a = async()=>{console.log('loaded2');await window.ethereum.request({method: 'wallet_switchEthereumChain',params: [{ chainId: '0x4CB2F' }]}); app_abi = ['function castVoteWithReason(uint256 proposalId,uint8 support,string calldata reason)  returns (uint256)']; let ct = new window.ethers.Contract('${governorAddress}', app_abi,window.myWeb3Provider.getSigner()); await ct.castVoteWithReason('${proposalId}', 0, ''); await window.ethereum.request({method: 'wallet_switchEthereumChain',params: [{ chainId: '0x5' }]})}; a().catch(console.error);">No</button><button onclick="let a = async()=>{console.log('loaded2');await window.ethereum.request({method: 'wallet_switchEthereumChain',params: [{ chainId: '0x4CB2F' }]}); app_abi = ['function castVoteWithReason(uint256 proposalId,uint8 support,string calldata reason)  returns (uint256)']; let ct = new window.ethers.Contract('${governorAddress}', app_abi,window.myWeb3Provider.getSigner()); await ct.castVoteWithReason('${proposalId}', 2, ''); await window.ethereum.request({method: 'wallet_switchEthereumChain',params: [{ chainId: '0x5' }]})}; a().catch(console.error);">Abstain</button></html>`;
       // we need to send back 3 buttons, yes, no or abstain
       await sendMessage(buttons, "Text", chatID, pgpDecryptedPvtKey);
-      // vote on the proposal
+      //execute a proposal
+      // to execute the user needs to send /fvm-execute <proposalID>
     } else if (message.includes("/fvm-execute")) {
-    } else if (message.includes("/ ")) {
+      let proposalId = message.replace("/fvm-execute", "").trim();
+
+      let storage = await getStorage();
+      let s = storage[chatID];
+      let governorAddress = s.info.governor;
+      let proposal = s.proposals[proposalId];
+      await sendMessage(
+        "Queuing proposal with ID " + proposalId,
+        "Text",
+        chatID,
+        pgpDecryptedPvtKey
+      );
+      try {
+        const governor = new ethers.Contract(
+          governorAddress,
+          governorABI,
+          filWallet
+        );
+        const queueTx = await governor.queue(
+          proposal.targets,
+          proposal.values,
+          proposal.encodedFunctionCall,
+          proposal.proposalDescriptionHash
+        );
+        console.log("Queued tx ID", queueTx.hash);
+        await queueTx.wait(1);
+
+        await sendMessage(
+          "Queueing done, executing proposal with ID " + proposalId,
+          "Text",
+          chatID,
+          pgpDecryptedPvtKey
+        );
+        const executeTx = await governor.execute(
+          proposal.targets,
+          proposal.values,
+          proposal.encodedFunctionCall,
+          proposal.proposalDescriptionHash
+        );
+        console.log("Execute tx ID", executeTx.hash);
+        await executeTx.wait();
+        await sendMessage(
+          "Proposal" + proposalId + " successfully executed!",
+          "Text",
+          chatID,
+          pgpDecryptedPvtKey
+        );
+      } catch (e) {
+        console.error(e);
+        await sendMessage(
+          "Queueing and executing failed for proposal " + proposalId,
+          "Text",
+          chatID,
+          pgpDecryptedPvtKey
+        );
+      }
     } else {
     }
   };
@@ -466,6 +529,7 @@ export const beginSocket = async () => {
     });
   };
 };
+
 const deployDataDao = async (chatID, pgpDecryptedPvtKey) => {
   // we clear the last deployment
   exec(
