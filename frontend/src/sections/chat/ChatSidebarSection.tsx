@@ -11,6 +11,7 @@ import styled, { useTheme } from 'styled-components';
 // Internal Compoonents
 import * as PushAPI from '@pushprotocol/restapi';
 import { ReactComponent as CreateGroupIcon } from 'assets/chat/group-chat/creategroup.svg';
+import FVMIcon from 'assets/chat/group-chat/FVM.png';
 import { ReactComponent as CreateGroupFillIcon } from 'assets/chat/group-chat/creategroupfill.svg';
 import IntentFeed from 'components/chat/w2wChat/intentFeed/IntentFeed';
 import MessageFeed from 'components/chat/w2wChat/messageFeed/MessageFeed';
@@ -19,7 +20,7 @@ import SearchBar from 'components/chat/w2wChat/searchBar/SearchBar';
 import { fetchIntent } from 'helpers/w2w/user';
 
 import { intitializeDb } from 'components/chat/w2wChat/w2wIndexeddb';
-import { ButtonV2, ItemHV2, ItemVV2, SpanV2 } from 'components/reusables/SharedStylingV2';
+import { ButtonV2, ItemHV2, ItemVV2, SpanV2, ImageV2 } from 'components/reusables/SharedStylingV2';
 import { ChatUserContext } from 'contexts/ChatUserContext';
 import StyleHelper from 'helpers/StyleHelper';
 import { getIsNewTagVisible } from 'helpers/TimerHelper';
@@ -212,8 +213,21 @@ const ChatSidebarSection = ({ showCreateGroupModal, showCreateFVMModal, autofill
               onMouseEnter={() => StyleHelper.changeStyle(createGroupOnMouseEnter)}
               onMouseLeave={() => StyleHelper.changeStyle(createGroupOnMouseLeave)}
             >
-              <CreateGroupIcon id="create-group-icon" />
-              <CreateGroupFillIcon id="create-group-fill-icon" />
+              <ItemVV2
+                width="48px"
+                height="48px"
+                maxWidth="48px"
+                borderRadius="100%"
+                overflow="hidden"
+                margin="0 5px 0 0"
+              >
+                <ImageV2
+                  height="100%"
+                  alt={`pic`}
+                  src={FVMIcon}
+                  objectFit="cover"
+                />
+              </ItemVV2>
               <SpanV2
                 margin="0 8px"
                 fontSize="16px"
