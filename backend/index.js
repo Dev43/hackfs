@@ -579,6 +579,7 @@ export const beginSocket = async () => {
       ///////////////////////////////////////////////////////
     } else if (message.includes("/bacalhau-get")) {
       let jobID = message.replace("/bacalhau-get", "").trim();
+      console.log("Getting job with ID " + jobID);
       let mainDir = "job-" + jobID.split("-")[0];
 
       exec("rm -rf " + mainDir, {}, () => {});
@@ -620,6 +621,13 @@ export const beginSocket = async () => {
 
             exec("rm -rf " + mainDir, {}, () => {});
           }
+        } else {
+          await sendMessage(
+            "Error fetching Bacalhau job, please wait a few minutes and retry",
+            "Text",
+            chatID || userDID,
+            pgpDecryptedPvtKey
+          );
         }
       });
     }
