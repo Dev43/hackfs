@@ -214,6 +214,8 @@ const Typebar = ({
               { label: '/ipfs-push', group: 'IPFS Commands', text: '/ipfs-push <file>' },
               { label: '/subscribe', group: 'ChatGPT', text: '/subscribe' },
               { label: '/gpt', group: 'ChatGPT', text: '/gpt <prompt>' },
+              { label: '/bacalhau-sd', group: 'Bacalhau', text: '/bacalhau-sd <prompt>' },
+              { label: '/bacalhau-get', group: 'Bacalhau', text: '/bacalhau-get <job_id>' },
             ]}
             onChange={(e, newValue) => {
               setNewMessage(newValue?.text);
