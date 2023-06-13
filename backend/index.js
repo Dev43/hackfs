@@ -534,7 +534,94 @@ export const beginSocket = async () => {
           pgpDecryptedPvtKey
         );
       }
-    } else {
+    } else if (message.includes("/bacalhau-sd")) {
+      let prompt = message.replace("/bacalhau-sd", "").trim();
+
+      const command = spawn(
+        "bacalhau",
+        [
+          "docker",
+          "run",
+          "--id-only",
+          "--gpu",
+          "1",
+          "ghcr.io/bacalhau-project/examples/stable-diffusion-gpu:0.0.1",
+          "--",
+          "python",
+          "main.py",
+          "--o",
+          "./outputs",
+          "--p",
+          prompt,
+        ],
+        {}
+      );
+      command.stdout.on("data", async (chunk) => {
+        let data = chunk.toString().trim();
+        console.log("Bacalhau-sd:", data);
+        await sendMessage(
+          "You request was received and sent to the Bacalhau network, please wait a few minutes and then call `/bacalhau-get " +
+            data +
+            "`",
+          "Text",
+          chatID || userDID,
+          pgpDecryptedPvtKey
+        );
+      });
+
+      command.stderr.on("data", (data) => {
+        console.error(`bacalhau-sd stderr: ${data}`);
+      });
+
+      command.on("close", (code) => {
+        console.log(`bacalhau-sd process exited with code ${code}`);
+      });
+      ///////////////////////////////////////////////////////
+    } else if (message.includes("/bacalhau-get")) {
+      let jobID = message.replace("/bacalhau-get", "").trim();
+      let mainDir = "job-" + jobID.split("-")[0];
+
+      exec("rm -rf " + mainDir, {}, () => {});
+
+      const command = spawn("bacalhau", ["get", jobID], {});
+      command.stdout.on("data", async (chunk) => {
+        let data = chunk.toString().trim();
+        console.log("Bacalhau-get:", data);
+      });
+
+      command.stderr.on("data", (data) => {
+        console.error(`bacalhau-get stderr: ${data}`);
+      });
+
+      command.on("close", async (code) => {
+        console.log(`bacalhau-sd process exited with code ${code}`);
+        if (code == 0) {
+          let dir = mainDir + "/outputs";
+          const files = await promises.readdir(dir);
+          console.log(files);
+          for (const fileName of files) {
+            let buffer = await promises.readFile(dir + "/" + fileName);
+
+            let mimeType = await fileTypeFromBuffer(buffer);
+            let f = buffer.toString("base64");
+            let file = {
+              name: "image0.png",
+              size: f.length,
+              type: mimeType.mime,
+              content: f,
+            };
+            console.log("Fetched, sending bacalhau response");
+            await sendMessage(
+              JSON.stringify(file),
+              "Image",
+              chatID || userDID,
+              pgpDecryptedPvtKey
+            );
+
+            exec("rm -rf " + mainDir, {}, () => {});
+          }
+        }
+      });
     }
   };
 
