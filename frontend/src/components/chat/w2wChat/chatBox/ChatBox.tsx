@@ -28,10 +28,7 @@ import Tooltip from 'components/reusables/tooltip/Tooltip';
 import { Content } from 'components/SharedStyling';
 import { ChatUserContext } from 'contexts/ChatUserContext';
 import * as w2wHelper from 'helpers/w2w/';
-import {
-  checkIfChatExist,
-  fetchInbox
-} from 'helpers/w2w/user';
+import { checkIfChatExist, fetchInbox } from 'helpers/w2w/user';
 import { useDeviceWidthCheck } from 'hooks';
 import { useResolveWeb3Name } from 'hooks/useResolveWeb3Name';
 import useToast from 'hooks/useToast';
@@ -84,7 +81,7 @@ const ChatBox = ({ setVideoCallInfo, showGroupInfoModal }): JSX.Element => {
     setReceivedIntents,
     setBlockedLoading,
   }: ContextType = useContext<ContextType>(Context);
-  const { web3NameList }:AppContextType=useContext(AppContext);
+  const { web3NameList }: AppContextType = useContext(AppContext);
   const [chatMeta, setChatMeta] = useState(null);
 
   const [newMessage, setNewMessage] = useState<string>('');
@@ -117,8 +114,8 @@ const ChatBox = ({ setVideoCallInfo, showGroupInfoModal }): JSX.Element => {
   useResolveWeb3Name(!isGroup ? currentChat?.wallets?.split(',')[0].toString() : null);
 
   // get web3 name
-  let ensName=''
-  if(!isGroup && currentChat?.wallets?.split(',')[0].toString()){
+  let ensName = '';
+  if (!isGroup && currentChat?.wallets?.split(',')[0].toString()) {
     const walletLowercase = caip10ToWallet(currentChat?.wallets?.split(',')[0].toString())?.toLowerCase();
     const checksumWallet = ethers.utils.getAddress(walletLowercase);
     ensName = web3NameList[checksumWallet];
@@ -242,7 +239,9 @@ const ChatBox = ({ setVideoCallInfo, showGroupInfoModal }): JSX.Element => {
   const fetchInboxApi = async (): Promise<Feeds> => {
     const inboxes: Feeds[] = await fetchInbox(connectedUser);
     setInbox(inboxes);
-    return inboxes?.find((x) => x.wallets.split(':')[1]?.toLowerCase() === currentChat.wallets.split(':')[1]?.toLowerCase());
+    return inboxes?.find(
+      (x) => x.wallets.split(':')[1]?.toLowerCase() === currentChat.wallets.split(':')[1]?.toLowerCase()
+    );
   };
 
   const sendMessage = async ({
@@ -281,9 +280,8 @@ const ChatBox = ({ setVideoCallInfo, showGroupInfoModal }): JSX.Element => {
 
         setTimeout(() => {
           setMessageBeingSent(false);
-        }, 1)
+        }, 1);
       }
-
     } catch (error) {
       chatBoxToast.showMessageToast({
         toastTitle: 'Error',
@@ -406,23 +404,23 @@ const ChatBox = ({ setVideoCallInfo, showGroupInfoModal }): JSX.Element => {
         });
 
         if (typeof sendResponse !== 'string') {
-           // We store the message in state decrypted so we display to the user the intent message
-           sendResponse.messageContent = message;
-           setNewMessage('');
-           let result = await fetchInboxApi();
-           result.msg.messageContent = message;
-           setChat(result);
-           chatBoxToast.showMessageToast({
-             toastTitle: 'Success',
-             toastMessage: 'Chat Request Sent',
-             toastType: 'SUCCESS',
-             getToastIcon: (size) => (
-               <MdCheckCircle
-                 size={size}
-                 color="green"
-               />
-             ),
-           });
+          // We store the message in state decrypted so we display to the user the intent message
+          sendResponse.messageContent = message;
+          setNewMessage('');
+          let result = await fetchInboxApi();
+          result.msg.messageContent = message;
+          setChat(result);
+          chatBoxToast.showMessageToast({
+            toastTitle: 'Success',
+            toastMessage: 'Chat Request Sent',
+            toastType: 'SUCCESS',
+            getToastIcon: (size) => (
+              <MdCheckCircle
+                size={size}
+                color="green"
+              />
+            ),
+          });
           setMessageBeingSent(false);
         }
       }
@@ -457,7 +455,7 @@ const ChatBox = ({ setVideoCallInfo, showGroupInfoModal }): JSX.Element => {
   const startVideoCallHandler = async () => {
     const toUser = await PushAPI.user.get({
       account: caip10ToWallet(currentChat.wallets.toString()),
-      env: appConfig.appEnv
+      env: appConfig.appEnv,
     });
 
     setVideoCallInfo({
@@ -470,26 +468,27 @@ const ChatBox = ({ setVideoCallInfo, showGroupInfoModal }): JSX.Element => {
       toProfilePic: currentChat.profilePicture,
       privateKeyArmored: connectedUser.privateKey,
       establishConnection: 1,
-      chatId: currentChat.chatId
+      chatId: currentChat.chatId,
     });
   };
 
-
   const InfoMessages = [
-    { id: 1, content: 'You can send up to 10 group requests in alpha' },
+    { id: 1, content: 'You can do everything that Push chat can do' },
     // { id: 2, content: 'You can send a chat request to anyone including non-whitelisted users' },
     // { id: 3, content: 'You can chat with non-whitelisted users but they cannot send a chat request to anyone.' },
     {
       id: 4,
-      content: 'You will have access to 1000 latest messages. Encryption is enabled after a chat request is accepted',
+      content:
+        'You can use push chat to create an FVM Data Dao, and have everything you need to manage your Data Dao right on the chat',
     },
-    { id: 5, content: 'Messages will only be encrypted if the receiver has encryption keys' },
+    { id: 5, content: 'You can upload and download any IPFS file right from the chat' },
     // {
     //   id: 6,
     //   content:
     //     'Due to certain limitations Push Chat does not support Ledger Wallet yet. We are working on adding support.',
     // },
-    { id: 7, content: 'Access to more chat requests and messages will be added in the near future' },
+    { id: 7, content: 'You can get access to ChatGPT, only if you have subscribed with a stream of APECoin' },
+    { id: 8, content: 'You can fetch any Bacalhau job and also ask it to create a Stable Diffusion image!' },
   ];
 
   return (
@@ -515,7 +514,7 @@ const ChatBox = ({ setVideoCallInfo, showGroupInfoModal }): JSX.Element => {
                   verticalAlign="middle"
                   margin="0 13px"
                 />
-                <WelcomeText>to Push Chat</WelcomeText>
+                <WelcomeText>to Chitty Chat</WelcomeText>
               </WelcomeMainText>
 
               <WelcomeInfo>
@@ -524,15 +523,8 @@ const ChatBox = ({ setVideoCallInfo, showGroupInfoModal }): JSX.Element => {
                   fontSize="15px"
                   lineHeight="130%"
                 >
-                  Push Chat is in alpha and things might break.
+                  Chitty Chat is a fork of Push Chat, with enhanced features.
                 </SpanV2>
-
-                <Atag
-                  href={'https://discord.gg/pushprotocol'}
-                  target="_blank"
-                >
-                  We would love to hear your feedback
-                </Atag>
 
                 <ItemBody>
                   {InfoMessages.map((item) => (
@@ -615,21 +607,26 @@ const ChatBox = ({ setVideoCallInfo, showGroupInfoModal }): JSX.Element => {
             </SpanV2>
 
             {/* Video call button */}
-           {!isGroup &&  <Tooltip
-              tooltipContent="Video call"
-              placementProps={{
-                bottom: '1.4rem',
-                transform: 'translateX(-92%)',
-                borderRadius: '12px 12px 2px 12px',
-                width: '75px',
-                padding: "0.3rem 0.8rem 0.25rem 0.8rem"
-              }}
-              wrapperProps={{ width: 'fit-content', minWidth: 'fit-content' }}
-            >
-              <VideoCallButton onClick={startVideoCallHandler}>
-                <ImageV2 cursor="pointer" src={videoCallIcon} />
-              </VideoCallButton>
-            </Tooltip>}
+            {!isGroup && (
+              <Tooltip
+                tooltipContent="Video call"
+                placementProps={{
+                  bottom: '1.4rem',
+                  transform: 'translateX(-92%)',
+                  borderRadius: '12px 12px 2px 12px',
+                  width: '75px',
+                  padding: '0.3rem 0.8rem 0.25rem 0.8rem',
+                }}
+                wrapperProps={{ width: 'fit-content', minWidth: 'fit-content' }}
+              >
+                <VideoCallButton onClick={startVideoCallHandler}>
+                  <ImageV2
+                    cursor="pointer"
+                    src={videoCallIcon}
+                  />
+                </VideoCallButton>
+              </Tooltip>
+            )}
 
             {currentChat.groupInformation && (
               <MoreOptions onClick={() => setShowGroupInfo(!showGroupInfo)}>
@@ -696,17 +693,17 @@ const ChatBox = ({ setVideoCallInfo, showGroupInfoModal }): JSX.Element => {
                             isGroup={isGroup}
                           />
                         )}
-                          <Chats
-                            msg={
-                              (!currentChat?.groupInformation?.isPublic && checkIfChatExist({ chats:receivedIntents, currentChat, connectedUser, isGroup }))
-                                ? ''
-                                : msg
-                            }
-                            caip10={walletToCAIP10({ account: account! })}
-                            messageBeingSent={messageBeingSent}
-                            isGroup={isGroup}
-                          />
-                        
+                        <Chats
+                          msg={
+                            !currentChat?.groupInformation?.isPublic &&
+                            checkIfChatExist({ chats: receivedIntents, currentChat, connectedUser, isGroup })
+                              ? ''
+                              : msg
+                          }
+                          caip10={walletToCAIP10({ account: account! })}
+                          messageBeingSent={messageBeingSent}
+                          isGroup={isGroup}
+                        />
                       </div>
                     );
                   })}
@@ -715,7 +712,7 @@ const ChatBox = ({ setVideoCallInfo, showGroupInfoModal }): JSX.Element => {
                   messages={messages}
                   isGroup={isGroup}
                 />
-                {checkIfChatExist({ chats:receivedIntents, currentChat, connectedUser, isGroup }) && (
+                {checkIfChatExist({ chats: receivedIntents, currentChat, connectedUser, isGroup }) && (
                   <Chats
                     msg={{
                       ...messages[0],
@@ -734,7 +731,7 @@ const ChatBox = ({ setVideoCallInfo, showGroupInfoModal }): JSX.Element => {
             <div ref={bottomRef}></div>
           </MessageContainer>
 
-          {checkIfChatExist({ chats:receivedIntents, currentChat, connectedUser,isGroup }) ? null : (
+          {checkIfChatExist({ chats: receivedIntents, currentChat, connectedUser, isGroup }) ? null : (
             <>
               <Typebar
                 messageBeingSent={messageBeingSent}
@@ -746,8 +743,8 @@ const ChatBox = ({ setVideoCallInfo, showGroupInfoModal }): JSX.Element => {
                 sendIntent={sendIntent}
                 setOpenSuccessSnackBar={setOpenSuccessSnackBar}
                 setSnackbarText={setSnackbarText}
-                isJoinGroup = {(!checkIfChatExist({ chats:inbox, currentChat, connectedUser,isGroup }) && isGroup)}
-                approveIntent= {ApproveIntent}
+                isJoinGroup={!checkIfChatExist({ chats: inbox, currentChat, connectedUser, isGroup }) && isGroup}
+                approveIntent={ApproveIntent}
               />
             </>
           )}
