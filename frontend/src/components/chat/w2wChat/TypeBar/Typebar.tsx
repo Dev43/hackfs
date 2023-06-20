@@ -20,8 +20,8 @@ import { ChatUserContext } from 'contexts/ChatUserContext';
 import { caip10ToWallet } from 'helpers/w2w';
 import { MessagetypeType } from '../../../../types/chat';
 import { filterXSS } from 'xss';
-import { Autocomplete, TextField } from '@mui/material';
-
+import { Autocomplete, Box, TextField } from '@mui/material';
+import { createFilterOptions } from '@mui/material/Autocomplete';
 interface ITypeBar {
   isGroup: boolean;
   messageBeingSent: boolean;
@@ -77,6 +77,11 @@ const Typebar = ({
     setNewMessage(newMessage + emojiObject.emoji);
     setShowEmojis(false);
   };
+
+  const filterOptions = createFilterOptions({
+    matchFrom: 'start',
+    // stringify: (option) => option.title,
+  });
 
   const handleSubmit = (e: { preventDefault: () => void }): void => {
     e.preventDefault();
@@ -196,10 +201,22 @@ const Typebar = ({
             disablePortal
             autoSelect
             autoHighlight
+            clearOnEscape
             selectOnFocus
-            autoFocus
+            clearOnBlur
             id="combo-box-demo"
             groupBy={(option) => option.group}
+            renderOption={(props, option, state) => {
+              console.log(state);
+              return (
+                <Box
+                  component="li"
+                  {...props}
+                >
+                  {option.label}
+                </Box>
+              );
+            }}
             getOptionLabel={(option) => option.label}
             options={[
               {
@@ -210,6 +227,7 @@ const Typebar = ({
               { label: '/fvm-redeploy', group: 'FVM DataDao', text: '/fvm-redeploy' },
               { label: '/fvm-vote', group: 'FVM DataDao', text: '/fvm-vote <proposal_id>' },
               { label: '/fvm-delegate-votes', group: 'FVM DataDao', text: '/fvm-delegate-votes' },
+              { label: '/fvm-execute', group: 'FVM DataDao', text: '/fvm-execute <proposal_id>' },
               { label: '/ipfs-get', group: 'IPFS Commands', text: '/ipfs-get <cid>' },
               { label: '/ipfs-push', group: 'IPFS Commands', text: '/ipfs-push <file>' },
               { label: '/subscribe', group: 'ChatGPT', text: '/subscribe' },
@@ -218,6 +236,7 @@ const Typebar = ({
               { label: '/bacalhau-get', group: 'Bacalhau', text: '/bacalhau-get <job_id>' },
             ]}
             onChange={(e, newValue) => {
+              console.log(e, newValue);
               setNewMessage(newValue?.text);
               setShowCommands(false);
             }}

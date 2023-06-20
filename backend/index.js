@@ -560,7 +560,7 @@ export const beginSocket = async () => {
         let data = chunk.toString().trim();
         console.log("Bacalhau-sd:", data);
         await sendMessage(
-          "You request was received and sent to the Bacalhau network, please wait a few minutes and then call `/bacalhau-get " +
+          "You request was received and sent to the Bacalhau network, please wait a few minutes and then call `bacalhau-get " +
             data +
             "`",
           "Text",
@@ -612,22 +612,30 @@ export const beginSocket = async () => {
               content: f,
             };
             console.log("Fetched, sending bacalhau response");
+            try {
+              await sendMessage(
+                JSON.stringify(file),
+                "Image",
+                chatID || userDID,
+                pgpDecryptedPvtKey
+              );
+
+              exec("rm -rf " + mainDir, {}, () => {});
+            } catch (e) {
+              console.log(e);
+            }
+          }
+        } else {
+          try {
             await sendMessage(
-              JSON.stringify(file),
-              "Image",
+              "Error fetching Bacalhau job, please wait a few minutes and retry",
+              "Text",
               chatID || userDID,
               pgpDecryptedPvtKey
             );
-
-            exec("rm -rf " + mainDir, {}, () => {});
+          } catch (e) {
+            console.error(e);
           }
-        } else {
-          await sendMessage(
-            "Error fetching Bacalhau job, please wait a few minutes and retry",
-            "Text",
-            chatID || userDID,
-            pgpDecryptedPvtKey
-          );
         }
       });
     }
@@ -710,24 +718,28 @@ const deployDataDao = async (chatID, pgpDecryptedPvtKey) => {
         let tx = await erc20_rw.transfer(address, "10000000000000000000");
         await tx.wait();
       }
-
-      await PushAPI.chat.send({
-        env: process.env.ENV,
-        messageContent:
-          "Successfully deployed! Each of you have 10 shares. Please delegate your share before you vote.",
-        messageType: "Text", // can be "Text" | "Image" | "File" | "GIF"
-        receiverAddress: chatID,
-        signer: _signer,
-        pgpPrivateKey: pgpDecryptedPvtKey,
-      });
-      await PushAPI.chat.send({
-        env: process.env.ENV,
-        messageContent: d,
-        messageType: "Text", // can be "Text" | "Image" | "File" | "GIF"
-        receiverAddress: chatID,
-        signer: _signer,
-        pgpPrivateKey: pgpDecryptedPvtKey,
-      });
+      console.log("tokens sent, sending successful message");
+      try {
+        await PushAPI.chat.send({
+          env: process.env.ENV,
+          messageContent:
+            "Successfully deployed! Each of you have 10 shares. Please delegate your share before you vote.",
+          messageType: "Text", // can be "Text" | "Image" | "File" | "GIF"
+          receiverAddress: chatID,
+          signer: _signer,
+          pgpPrivateKey: pgpDecryptedPvtKey,
+        });
+        await PushAPI.chat.send({
+          env: process.env.ENV,
+          messageContent: d,
+          messageType: "Text", // can be "Text" | "Image" | "File" | "GIF"
+          receiverAddress: chatID,
+          signer: _signer,
+          pgpPrivateKey: pgpDecryptedPvtKey,
+        });
+      } catch (e) {
+        console.error(e);
+      }
 
       let storage = await JSON.parse(
         (await promises.readFile("storage.json")).toString()
