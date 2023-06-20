@@ -217,9 +217,10 @@ export const beginSocket = async () => {
       signer: _signer,
       env: process.env.ENV,
     });
-    if (message.includes("/huddle")) {
+    if (message.startsWith("/huddle")) {
       console.log("huddle!");
-    } else if (message.includes("/gpt")) {
+    } else if (message.startsWith("/gpt")) {
+      console.log("gpt...");
       if (!(await isPaying(userDID.split("eip155:")[1]))) {
         console.error("user is not paying");
 
@@ -251,7 +252,8 @@ export const beginSocket = async () => {
       }
 
       await sendMessage(aiMsg, "Text", chatID || userDID, pgpDecryptedPvtKey);
-    } else if (message.includes("/subscribe")) {
+      console.log("gpt sent");
+    } else if (message.startsWith("/subscribe")) {
       try {
         let message = "You have already subscribed!";
         // TODO add validation if they are already subscribed
@@ -268,7 +270,7 @@ export const beginSocket = async () => {
       } catch (err) {
         console.error(err);
       }
-    } else if (message.includes("/ipfs-get")) {
+    } else if (message.startsWith("/ipfs-get")) {
       let ipfsCID = message.replace("/ipfs-get", "").trim();
       console.log("Fetching", ipfsCID, " on IPFS");
 
@@ -294,7 +296,8 @@ export const beginSocket = async () => {
         chatID || userDID,
         pgpDecryptedPvtKey
       );
-    } else if (message.includes("/ipfs-push")) {
+    } else if (message.startsWith("/ipfs-push")) {
+      console.log("ipfs push....");
       // we will use this TextEncoder to turn strings into Uint8Arrays
       const encoder = new TextEncoder();
       // add the bytes to your node and receive a unique content identifier
@@ -311,7 +314,8 @@ export const beginSocket = async () => {
         chatID || userDID,
         pgpDecryptedPvtKey
       );
-    } else if (message.includes("/fvm-create-new-group")) {
+      console.log("ipfs push sent");
+    } else if (message.startsWith("/fvm-create-new-group")) {
       let members = message
         .replace("/fvm-create-new-group", "")
         .trim()
@@ -328,9 +332,9 @@ export const beginSocket = async () => {
         account: process.env.ROBOT_ADDRESS,
         pgpPrivateKey: pgpDecryptedPvtKey, //decrypted private key
       });
-    } else if (message.includes("/fvm-redeploy")) {
+    } else if (message.startsWith("/fvm-redeploy")) {
       await deployDataDao(chatID, pgpDecryptedPvtKey);
-    } else if (message.includes("/fvm-delegate-votes")) {
+    } else if (message.startsWith("/fvm-delegate-votes")) {
       // delegate to themselves
       // send back button so they can delegate to themselves
       let address = userDID.split("eip155:")[1];
@@ -346,7 +350,9 @@ export const beginSocket = async () => {
 
       // fvm propose needs to send the proposal piece cid
       // /fvm-propose <piece_cid>,<piece_size>,<piece_label>,<location_ref>,<car_size>,<proposal_description>
-    } else if (message.includes("/fvm-propose")) {
+    } else if (message.startsWith("/fvm-propose")) {
+      console.log("proposing....");
+
       let proposal = message.replace("/fvm-propose", "").trim().split(",");
       let pieceCID = proposal[0];
       let pieceSize = proposal[1];
@@ -444,6 +450,7 @@ export const beginSocket = async () => {
         storage[chatID].proposals = proposals;
         await saveToStorage(storage);
         await sendMessage(txt, "Text", chatID || userDID, pgpDecryptedPvtKey);
+        console.log("proposal sent");
       } catch (e) {
         console.error(e);
         await sendMessage(
@@ -456,9 +463,9 @@ export const beginSocket = async () => {
 
       // propose a file to store
       // to vote the user needs to send /fvm-vote <proposalID>
-    } else if (message.includes("/fvm-vote")) {
+    } else if (message.startsWith("/fvm-vote")) {
       let proposalId = message.replace("/fvm-vote", "").trim();
-
+      console.log("voting....");
       if (!proposalId) {
         await sendMessage(
           "Proposal ID is missing",
@@ -475,9 +482,12 @@ export const beginSocket = async () => {
       let buttons = `<html><button onclick="let a = async()=>{console.log('loaded2');await window.ethereum.request({method: 'wallet_switchEthereumChain',params: [{ chainId: '0x4CB2F' }]}); app_abi = ['function castVoteWithReason(uint256 proposalId,uint8 support,string calldata reason)  returns (uint256)']; let ct = new window.ethers.Contract('${governorAddress}', app_abi,window.myWeb3Provider.getSigner()); await ct.castVoteWithReason('${proposalId}', 1, ''); await window.ethereum.request({method: 'wallet_switchEthereumChain',params: [{ chainId: '0x5' }]})}; a().catch(console.error);">Yes</button><button onclick="let a = async()=>{console.log('loaded2');await window.ethereum.request({method: 'wallet_switchEthereumChain',params: [{ chainId: '0x4CB2F' }]}); app_abi = ['function castVoteWithReason(uint256 proposalId,uint8 support,string calldata reason)  returns (uint256)']; let ct = new window.ethers.Contract('${governorAddress}', app_abi,window.myWeb3Provider.getSigner()); await ct.castVoteWithReason('${proposalId}', 0, ''); await window.ethereum.request({method: 'wallet_switchEthereumChain',params: [{ chainId: '0x5' }]})}; a().catch(console.error);">No</button><button onclick="let a = async()=>{console.log('loaded2');await window.ethereum.request({method: 'wallet_switchEthereumChain',params: [{ chainId: '0x4CB2F' }]}); app_abi = ['function castVoteWithReason(uint256 proposalId,uint8 support,string calldata reason)  returns (uint256)']; let ct = new window.ethers.Contract('${governorAddress}', app_abi,window.myWeb3Provider.getSigner()); await ct.castVoteWithReason('${proposalId}', 2, ''); await window.ethereum.request({method: 'wallet_switchEthereumChain',params: [{ chainId: '0x5' }]})}; a().catch(console.error);">Abstain</button></html>`;
       // we need to send back 3 buttons, yes, no or abstain
       await sendMessage(buttons, "Text", chatID || userDID, pgpDecryptedPvtKey);
+      console.log("voting sent");
+
       //execute a proposal
       // to execute the user needs to send /fvm-execute <proposalID>
-    } else if (message.includes("/fvm-execute")) {
+    } else if (message.startsWith("/fvm-execute")) {
+      console.log("executing...");
       let proposalId = message.replace("/fvm-execute", "").trim();
 
       let storage = await getStorage();
@@ -534,7 +544,9 @@ export const beginSocket = async () => {
           pgpDecryptedPvtKey
         );
       }
-    } else if (message.includes("/bacalhau-sd")) {
+      console.log("executing sent");
+    } else if (message.startsWith("/bacalhau-sd")) {
+      console.log("bacalhau-sd....");
       let prompt = message.replace("/bacalhau-sd", "").trim();
 
       const command = spawn(
@@ -560,13 +572,14 @@ export const beginSocket = async () => {
         let data = chunk.toString().trim();
         console.log("Bacalhau-sd:", data);
         await sendMessage(
-          "You request was received and sent to the Bacalhau network, please wait a few minutes and then call `bacalhau-get " +
+          "You request was received and sent to the Bacalhau network, please wait a few minutes and then call `/bacalhau-get " +
             data +
             "`",
           "Text",
           chatID || userDID,
           pgpDecryptedPvtKey
         );
+        console.log("bacalhau-sd sent");
       });
 
       command.stderr.on("data", (data) => {
@@ -577,7 +590,9 @@ export const beginSocket = async () => {
         console.log(`bacalhau-sd process exited with code ${code}`);
       });
       ///////////////////////////////////////////////////////
-    } else if (message.includes("/bacalhau-get")) {
+    } else if (message.startsWith("/bacalhau-get")) {
+      console.log("bacalhau-get...");
+
       let jobID = message.replace("/bacalhau-get", "").trim();
       console.log("Getting job with ID " + jobID);
       let mainDir = "job-" + jobID.split("-")[0];
@@ -624,6 +639,7 @@ export const beginSocket = async () => {
             } catch (e) {
               console.log(e);
             }
+            console.log("bacalhau-get sent");
           }
         } else {
           try {
