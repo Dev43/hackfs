@@ -243,6 +243,7 @@ const ChatSidebarSection = ({ showCreateGroupModal, showCreateFVMModal, autofill
               // justifyContent="flex-start"
               flex="none"
               padding="20px 10px 24px 10px"
+              style={{ display: 'none' }}
               borderRadius={GLOBALS.ADJUSTMENTS.RADIUS.MID}
               onClick={() => showCreateGroupModal()}
               background="transparent"
@@ -301,13 +302,13 @@ const ChatSidebarSection = ({ showCreateGroupModal, showCreateFVMModal, autofill
         </QRCodeContainer>
       ) : null}
 
-      <ProfileContainer borderTop={`1px solid ${theme.default.secondaryBg}`}>
+      {/* <ProfileContainer borderTop={`1px solid ${theme.default.secondaryBg}`}>
         <ProfileHeader
           setActiveTab={setActiveTab}
           setShowQR={setShowQR}
           showQR={showQR}
         />
-      </ProfileContainer>
+      </ProfileContainer> */}
     </ItemVV2>
   );
 };
